@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.DogInventory" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.DogInventory.SplashHost" parent="Theme.DogInventory">
+        <item name="android:windowBackground">@drawable/dashboard_bg</item>
+    </style>
+
+    <style name="Theme.DogInventory.Starting" parent="Theme.DogInventory">
+        <item name="android:windowBackground">@drawable/dashboard_bg</item>
+    </style>
+
+</resources>
