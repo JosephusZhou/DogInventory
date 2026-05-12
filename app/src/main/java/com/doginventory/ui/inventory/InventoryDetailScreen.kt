@@ -1,8 +1,7 @@
 package com.doginventory.ui.inventory
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -17,7 +16,6 @@ import androidx.compose.ui.unit.sp
 import com.doginventory.R
 import com.doginventory.ui.components.AppCard
 import com.doginventory.ui.components.AppTopBar
-import com.doginventory.ui.components.cardContainerColor
 import com.doginventory.ui.theme.DogInventoryTheme
 import com.doginventory.ui.theme.SystemBarsStyle
 
@@ -89,15 +87,15 @@ fun InventoryDetailScreen(
             return@Box
         }
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize()
-                .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 24.dp)
-                .verticalScroll(rememberScrollState()),
+                .fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header Card
+            item {
             AppCard(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier
@@ -134,24 +132,23 @@ fun InventoryDetailScreen(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        val expireText = formatInventoryExpireText(context, item.expireAt)
-                        val isExpiredLocal = isInventoryExpired(item.expireAt)
-                        val isSoonLocal = isInventorySoon(item.expireAt)
                         Text(
-                            text = expireText,
+                            text = formatInventoryExpireText(context, item.expireAt),
                             style = MaterialTheme.typography.bodyMedium,
                             color = when {
-                                isExpiredLocal -> DogInventoryTheme.semanticColors.inventoryExpired
-                                isSoonLocal -> DogInventoryTheme.semanticColors.warning
+                                isExpired -> DogInventoryTheme.semanticColors.inventoryExpired
+                                isSoon -> DogInventoryTheme.semanticColors.warning
                                 else -> MaterialTheme.colorScheme.onSurface
                             }
                         )
                     }
                 }
             }
+            }
 
             // Status Section
             if (isExpired || isSoon) {
+                item {
                 AppCard(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -190,10 +187,12 @@ fun InventoryDetailScreen(
                         }
                     }
                 }
+                }
             }
 
             // Reminder Rules Section
             if (rules.isNotEmpty()) {
+                item {
                 AppCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.inventory_reminder_rules_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
@@ -224,10 +223,12 @@ fun InventoryDetailScreen(
                         }
                     }
                 }
+                }
             }
 
             // Note Section
             if (item.note.isNotBlank()) {
+                item {
                 AppCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.inventory_detail_section_note), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
@@ -238,9 +239,11 @@ fun InventoryDetailScreen(
                         )
                     }
                 }
+                }
             }
 
             // Metadata Section
+            item {
             AppCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(stringResource(R.string.inventory_detail_section_metadata), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
@@ -248,6 +251,7 @@ fun InventoryDetailScreen(
                     MetadataRow(stringResource(R.string.inventory_metadata_created_at), item.createdAt.let(::formatInventoryDateTime))
                     MetadataRow(stringResource(R.string.inventory_metadata_updated_at), item.updatedAt.let(::formatInventoryDateTime))
                 }
+            }
             }
         }
         }

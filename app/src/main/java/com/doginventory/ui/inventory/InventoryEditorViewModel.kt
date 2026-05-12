@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import java.util.*
 
@@ -31,12 +30,6 @@ class InventoryEditorViewModel(
     val categories: StateFlow<List<InventoryCategoryEntity>> = _categories.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            repository.allCategories.collect {
-                _categories.value = it
-            }
-        }
-        
         if (itemId != null) {
             viewModelScope.launch {
                 val item = repository.watchItemById(itemId).first() ?: return@launch
@@ -49,6 +42,12 @@ class InventoryEditorViewModel(
                     rules = it.map(InventoryReminderDraft::fromEntity).sortedForDisplay()
                 }
             }
+        }
+    }
+
+    fun refreshCategories() {
+        viewModelScope.launch {
+            _categories.value = repository.getCategoriesOnce()
         }
     }
 

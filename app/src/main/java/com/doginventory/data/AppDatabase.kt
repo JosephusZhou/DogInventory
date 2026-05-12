@@ -20,7 +20,7 @@ import java.io.File
         InventoryReminderRuleEntity::class,
         ShoppingItemEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,7 +28,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "dog_inventory_database"
-        const val DATABASE_VERSION = 4
+        const val DATABASE_VERSION = 5
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -40,7 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                .addMigrations(MIGRATION_1_4, MIGRATION_2_4, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_4, MIGRATION_2_4, MIGRATION_3_4, MIGRATION_4_5)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                         super.onCreate(db)
@@ -157,6 +157,17 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("DROP TABLE inventory_items")
                 db.execSQL("ALTER TABLE inventory_items_new RENAME TO inventory_items")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_inventory_items_categoryId ON inventory_items(categoryId)")
+            }
+        }
+
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_inventory_items_status_updatedAt ON inventory_items(status, updatedAt)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_shopping_items_isDone_updatedAt ON shopping_items(isDone, updatedAt)"
+                )
             }
         }
     }

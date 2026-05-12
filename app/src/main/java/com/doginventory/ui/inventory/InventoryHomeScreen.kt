@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +44,6 @@ fun InventoryHomeScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val isDarkTheme = isSystemInDarkTheme()
-    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -88,7 +86,7 @@ fun InventoryHomeScreen(
                                 StatCard(
                                     modifier = Modifier.weight(1f),
                                     title = stringResource(R.string.inventory_filter_soon),
-                                    value = state.allItems.count { isInventorySoon(it.item.expireAt) }.toString(),
+                                    value = state.soonCount.toString(),
                                     subtitle = stringResource(R.string.inventory_soon_subtitle),
                                     accent = DogInventoryTheme.semanticColors.warningAccent,
                                     onClick = { viewModel.setFilter(InventoryFilter.Soon) }
@@ -96,7 +94,7 @@ fun InventoryHomeScreen(
                                 StatCard(
                                     modifier = Modifier.weight(1f),
                                     title = stringResource(R.string.inventory_filter_expired),
-                                    value = state.allItems.count { isInventoryExpired(it.item.expireAt) }.toString(),
+                                    value = state.expiredCount.toString(),
                                     subtitle = stringResource(R.string.inventory_expired_subtitle),
                                     accent = DogInventoryTheme.semanticColors.inventoryExpired,
                                     onClick = { viewModel.setFilter(InventoryFilter.Expired) }
@@ -111,7 +109,7 @@ fun InventoryHomeScreen(
                                 )
                             }
                         } else {
-                            items(state.items) { uiModel ->
+                            items(state.items, key = { it.item.id }) { uiModel ->
                                 InventoryCard(
                                     uiModel = uiModel,
                                     onClick = { onNavigateToDetail(uiModel.item.id) }
@@ -200,7 +198,6 @@ fun InventoryCard(
     uiModel: InventoryItemUiModel,
     onClick: () -> Unit
 ) {
-    val context = LocalContext.current
     val item = uiModel.item
     val category = uiModel.category
     
@@ -241,15 +238,15 @@ fun InventoryCard(
                         maxLines = 1,
                         modifier = Modifier.weight(1f)
                     )
-                    if (isInventoryExpired(item.expireAt) || isInventorySoon(item.expireAt)) {
+                    if (uiModel.isExpired || uiModel.isSoon) {
                         Spacer(modifier = Modifier.width(8.dp))
                         InventoryStatusChip(
-                            label = if (isInventoryExpired(item.expireAt)) {
+                            label = if (uiModel.isExpired) {
                                 stringResource(R.string.inventory_filter_expired)
                             } else {
                                 stringResource(R.string.inventory_filter_soon)
                             },
-                            isExpired = isInventoryExpired(item.expireAt)
+                            isExpired = uiModel.isExpired
                         )
                     }
                 }
@@ -260,17 +257,17 @@ fun InventoryCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                val expireText = formatInventoryExpireText(context, item.expireAt)
-                val isExpired = isInventoryExpired(item.expireAt)
-                val isSoon = isInventorySoon(item.expireAt)
-                
                 Text(
-                    text = expireText,
+                    text = if (uiModel.expireDateText == null) {
+                        stringResource(R.string.inventory_never_expires)
+                    } else {
+                        stringResource(R.string.inventory_expire_time, uiModel.expireDateText)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                     color = when {
-                        isExpired -> DogInventoryTheme.semanticColors.inventoryExpired
-                        isSoon -> DogInventoryTheme.semanticColors.warning
+                        uiModel.isExpired -> DogInventoryTheme.semanticColors.inventoryExpired
+                        uiModel.isSoon -> DogInventoryTheme.semanticColors.warning
                         else -> MaterialTheme.colorScheme.onSurface
                     }
                 )

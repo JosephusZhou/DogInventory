@@ -3,13 +3,10 @@ package com.doginventory.ui
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.doginventory.backup.BackupArchiveService
-import com.doginventory.backup.BackupRestoreCoordinator
-import com.doginventory.backup.BackupStorageBridge
+import com.doginventory.DogInventoryApp
 import com.doginventory.data.entity.InventoryCategoryEntity
 import com.doginventory.data.repository.InventoryRepository
 import com.doginventory.permission.StoragePermissionCoordinator
-import com.doginventory.settings.PreferencesService
 import com.doginventory.ui.inventory.CategoryEditorViewModel
 import com.doginventory.ui.inventory.InventoryCategoriesViewModel
 import com.doginventory.ui.inventory.InventoryDetailViewModel
@@ -19,8 +16,6 @@ import com.doginventory.ui.shopping.ShoppingEditorViewModel
 import com.doginventory.ui.shopping.ShoppingViewModel
 import com.doginventory.ui.settings.SettingsBackupViewModel
 import com.doginventory.ui.settings.SettingsWebdavSyncViewModel
-import com.doginventory.webdav.WebDavAutoSyncScheduler
-import com.doginventory.webdav.WebDavSyncService
 
 class ViewModelFactory(
     private val repository: InventoryRepository,
@@ -62,43 +57,23 @@ class ViewModelFactory(
             modelClass.isAssignableFrom(SettingsBackupViewModel::class.java) -> {
                 val context = requireNotNull(applicationContext) { "applicationContext is required for SettingsBackupViewModel" }
                 val coordinator = requireNotNull(storagePermissionCoordinator) { "storagePermissionCoordinator is required for SettingsBackupViewModel" }
-                val preferencesService = PreferencesService(context)
-                val webDavSyncService = WebDavSyncService(
-                    context = context,
-                    repository = repository,
-                    preferencesService = preferencesService,
-                    archiveService = BackupArchiveService(context, preferencesService)
-                )
-                preferencesService.webDavAutoSyncTrigger = WebDavAutoSyncScheduler(preferencesService, webDavSyncService)
+                val app = context.applicationContext as DogInventoryApp
                 @Suppress("UNCHECKED_CAST")
                 SettingsBackupViewModel(
                     resources = context.resources,
-                    BackupRestoreCoordinator(
-                        context = context,
-                        repository = repository,
-                        preferencesService = preferencesService,
-                        archiveService = BackupArchiveService(context, preferencesService),
-                        storageBridge = BackupStorageBridge(context)
-                    ),
+                    app.backupRestoreCoordinator,
                     coordinator,
-                    preferencesService
+                    app.preferencesService
                 ) as T
             }
             modelClass.isAssignableFrom(SettingsWebdavSyncViewModel::class.java) -> {
                 val context = requireNotNull(applicationContext) { "applicationContext is required for SettingsWebdavSyncViewModel" }
-                val preferencesService = PreferencesService(context)
-                val webDavSyncService = WebDavSyncService(
-                    context = context,
-                    repository = repository,
-                    preferencesService = preferencesService,
-                    archiveService = BackupArchiveService(context, preferencesService)
-                )
-                preferencesService.webDavAutoSyncTrigger = WebDavAutoSyncScheduler(preferencesService, webDavSyncService)
+                val app = context.applicationContext as DogInventoryApp
                 @Suppress("UNCHECKED_CAST")
                 SettingsWebdavSyncViewModel(
                     resources = context.resources,
-                    preferencesService = preferencesService,
-                    webDavSyncService = webDavSyncService
+                    preferencesService = app.preferencesService,
+                    webDavSyncService = app.webDavSyncService
                 ) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

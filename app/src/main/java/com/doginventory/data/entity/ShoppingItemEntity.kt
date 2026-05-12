@@ -1,9 +1,13 @@
 package com.doginventory.data.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "shopping_items")
+@Entity(
+    tableName = "shopping_items",
+    indices = [Index(value = ["isDone", "updatedAt"])]
+)
 data class ShoppingItemEntity(
     @PrimaryKey val id: String,
     val name: String,

@@ -28,6 +28,8 @@ class InventoryRepository(
 
     fun watchItemById(id: String): Flow<InventoryItemEntity?> = inventoryDao.watchItemById(id)
 
+    suspend fun getCategoriesOnce(): List<InventoryCategoryEntity> = allCategories.first()
+
     suspend fun insertItem(item: InventoryItemEntity, rules: List<InventoryReminderRuleEntity>) {
         inventoryDao.insertItem(item)
         rules.forEach { inventoryDao.insertRule(it) }
@@ -69,9 +71,21 @@ class InventoryRepository(
         webDavAutoSyncTrigger?.requestSync("inventory_category_updated")
     }
 
+    suspend fun updateCategories(categories: List<InventoryCategoryEntity>, syncReason: String) {
+        withBatchedAutoSync(syncReason) {
+            inventoryDao.updateCategories(categories)
+        }
+    }
+
     suspend fun insertCategory(category: InventoryCategoryEntity) {
         inventoryDao.insertCategory(category)
         webDavAutoSyncTrigger?.requestSync("inventory_category_inserted")
+    }
+
+    suspend fun insertCategories(categories: List<InventoryCategoryEntity>, syncReason: String) {
+        withBatchedAutoSync(syncReason) {
+            inventoryDao.insertCategories(categories)
+        }
     }
 
     suspend fun deleteCategory(category: InventoryCategoryEntity) {
@@ -108,6 +122,16 @@ class InventoryRepository(
     suspend fun deleteDoneShoppingItems() {
         inventoryDao.deleteDoneShoppingItems()
         webDavAutoSyncTrigger?.requestSync("shopping_done_items_deleted")
+    }
+
+    suspend fun <T> withBatchedAutoSync(syncReason: String, block: suspend () -> T): T {
+        val trigger = webDavAutoSyncTrigger
+        trigger?.pauseSync()
+        return try {
+            block()
+        } finally {
+            trigger?.resumeSync(flushReason = syncReason)
+        }
     }
 
     private suspend fun syncReminders(

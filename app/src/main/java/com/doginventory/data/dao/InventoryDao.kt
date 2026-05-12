@@ -19,8 +19,14 @@ interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategory(category: InventoryCategoryEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCategories(categories: List<InventoryCategoryEntity>)
+
     @Update
     suspend fun updateCategory(category: InventoryCategoryEntity)
+
+    @Update
+    suspend fun updateCategories(categories: List<InventoryCategoryEntity>)
 
     @Delete
     suspend fun deleteCategory(category: InventoryCategoryEntity)

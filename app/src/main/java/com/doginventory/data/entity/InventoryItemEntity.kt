@@ -15,7 +15,10 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.SET_NULL
         )
     ],
-    indices = [Index(value = ["categoryId"])]
+    indices = [
+        Index(value = ["categoryId"]),
+        Index(value = ["status", "updatedAt"])
+    ]
 )
 data class InventoryItemEntity(
     @PrimaryKey val id: String,

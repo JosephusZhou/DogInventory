@@ -10,9 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -87,13 +86,14 @@ fun InventoryCategoriesScreen(
             return@Scaffold
         }
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 24.dp)
-                .verticalScroll(rememberScrollState())
+                .padding(start = 16.dp, end = 16.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 12.dp, bottom = 24.dp)
         ) {
+            item {
             SectionTitle(stringResource(R.string.inventory_categories_preset))
             Spacer(modifier = Modifier.height(8.dp))
             AppCard(modifier = Modifier.fillMaxWidth()) {
@@ -112,8 +112,10 @@ fun InventoryCategoriesScreen(
                     }
                 }
             }
+            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            item { Spacer(modifier = Modifier.height(20.dp)) }
+            item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SectionTitle(stringResource(R.string.inventory_categories_custom), modifier = Modifier.weight(1f))
                 TextButton(onClick = { onNavigateToCategoryEditor(null) }) {
@@ -125,9 +127,11 @@ fun InventoryCategoriesScreen(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
 
             if (customCategories.isEmpty()) {
+                item {
                 AppCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier
@@ -151,7 +155,9 @@ fun InventoryCategoriesScreen(
                         )
                     }
                 }
+                }
             } else {
+                item {
                 AppCard(modifier = Modifier.fillMaxWidth()) {
                     Column {
                         customCategories.forEach { category ->
@@ -167,6 +173,7 @@ fun InventoryCategoriesScreen(
                             )
                         }
                     }
+                }
                 }
             }
         }
@@ -186,7 +193,6 @@ private fun CategoryRow(
 ) {
     val avatarSize = if (compactLayout) 32.dp else 36.dp
     val rowVerticalPadding = if (compactLayout) 8.dp else 10.dp
-    val actionButtonSize = if (compactLayout) 32.dp else 36.dp
     val actionIconSize = 18.dp
 
     Row(

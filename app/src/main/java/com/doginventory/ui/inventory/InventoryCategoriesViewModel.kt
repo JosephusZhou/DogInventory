@@ -38,8 +38,13 @@ class InventoryCategoriesViewModel(
             val index = currentList.indexOfFirst { it.id == category.id }
             if (index > 0) {
                 val target = currentList[index - 1]
-                repository.updateCategory(category.copy(sortOrder = target.sortOrder))
-                repository.updateCategory(target.copy(sortOrder = category.sortOrder))
+                repository.updateCategories(
+                    categories = listOf(
+                        category.copy(sortOrder = target.sortOrder),
+                        target.copy(sortOrder = category.sortOrder)
+                    ),
+                    syncReason = "inventory_categories_reordered"
+                )
             }
         }
     }
@@ -54,8 +59,13 @@ class InventoryCategoriesViewModel(
             val index = currentList.indexOfFirst { it.id == category.id }
             if (index >= 0 && index < currentList.size - 1) {
                 val target = currentList[index + 1]
-                repository.updateCategory(category.copy(sortOrder = target.sortOrder))
-                repository.updateCategory(target.copy(sortOrder = category.sortOrder))
+                repository.updateCategories(
+                    categories = listOf(
+                        category.copy(sortOrder = target.sortOrder),
+                        target.copy(sortOrder = category.sortOrder)
+                    ),
+                    syncReason = "inventory_categories_reordered"
+                )
             }
         }
     }

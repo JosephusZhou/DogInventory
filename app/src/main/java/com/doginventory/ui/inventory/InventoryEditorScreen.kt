@@ -41,6 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,20 +73,25 @@ fun InventoryEditorScreen(
     val categories by viewModel.categories.collectAsState()
     var showCategoryMenu by remember { mutableStateOf(false) }
 
-    val calendar = Calendar.getInstance()
-    viewModel.expireAt?.let { calendar.timeInMillis = it }
-
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val selectedCalendar = Calendar.getInstance()
-            selectedCalendar.set(year, month, dayOfMonth, 0, 0, 0)
-            viewModel.setExpireAtAndDefaults(selectedCalendar.timeInMillis)
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
+    val currentExpireAt by rememberUpdatedState(viewModel.expireAt)
+    val showExpirePicker = remember(context, currentExpireAt) {
+        {
+            val calendar = Calendar.getInstance().apply {
+                currentExpireAt?.let { timeInMillis = it }
+            }
+            DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    val selectedCalendar = Calendar.getInstance()
+                    selectedCalendar.set(year, month, dayOfMonth, 0, 0, 0)
+                    viewModel.setExpireAtAndDefaults(selectedCalendar.timeInMillis)
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -131,7 +137,10 @@ fun InventoryEditorScreen(
                         SelectionField(
                             value = categories.find { it.id == viewModel.selectedCategoryId }?.let { "${it.icon} ${it.name}" }
                                 ?: stringResource(R.string.inventory_uncategorized),
-                            onClick = { showCategoryMenu = true }
+                            onClick = {
+                                viewModel.refreshCategories()
+                                showCategoryMenu = true
+                            }
                         )
                         DropdownMenu(
                             expanded = showCategoryMenu,
@@ -171,7 +180,7 @@ fun InventoryEditorScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     SelectionField(
                         value = viewModel.expireAt?.let(::formatInventoryDate) ?: stringResource(R.string.inventory_pick_expire_datetime),
-                        onClick = { datePickerDialog.show() }
+                        onClick = showExpirePicker
                     )
                     if (viewModel.expireAt != null) {
                         TextButton(onClick = { viewModel.setExpireAtAndDefaults(null) }) {
