@@ -6,6 +6,7 @@ import com.doginventory.backup.BackupRestoreCoordinator
 import com.doginventory.backup.BackupStorageBridge
 import com.doginventory.data.AppDatabase
 import com.doginventory.data.repository.InventoryRepository
+import com.doginventory.migration.flutter.FlutterBackupMigrator
 import com.doginventory.reminder.InventoryReminderScheduler
 import com.doginventory.settings.PreferencesService
 import com.doginventory.webdav.WebDavAutoSyncScheduler
@@ -58,6 +59,14 @@ class DogInventoryApp : Application() {
             preferencesService = preferencesService,
             archiveService = backupArchiveService,
             storageBridge = BackupStorageBridge(applicationContext)
+        )
+    }
+
+    val flutterBackupMigrator: FlutterBackupMigrator by lazy {
+        FlutterBackupMigrator(
+            context = applicationContext,
+            database = database,
+            repository = repository
         )
     }
 

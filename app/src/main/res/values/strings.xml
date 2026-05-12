@@ -123,6 +123,15 @@
     <string name="settings_backup_no_auto_record">暂无自动备份记录</string>
     <string name="settings_backup_created">备份已创建：%1$s</string>
     <string name="settings_restore_completed">恢复完成，应用将重新启动</string>
+    <string name="settings_flutter_migration_title">从 小狗记录App 迁移</string>
+    <string name="settings_flutter_migration_body">从旧版 小狗记录App 应用导入分类、存货、提醒和待买数据；同名分类会自动映射，不覆盖当前数据。</string>
+    <string name="settings_flutter_migration_dialog_title">导入旧版数据</string>
+    <string name="settings_flutter_migration_dialog_message">将导入分类、存货、提醒和待买数据；同名分类会直接映射到当前分类，不会覆盖现有内容。是否继续？</string>
+    <string name="settings_flutter_migration_result_title">迁移完成</string>
+    <string name="settings_flutter_migration_result_message">新增分类 %1$d 个，存货 %2$d 个，提醒 %3$d 条，待买 %4$d 条。\n\n提示：%5$s</string>
+    <string name="settings_flutter_migration_no_warning">无</string>
+    <string name="settings_flutter_migration_success">旧版数据导入完成</string>
+    <string name="settings_flutter_migration_failed">旧版数据导入失败，请重试</string>
     <string name="settings_webdav_title">WebDAV 同步</string>
     <string name="settings_webdav_restore_dialog_title">从 WebDAV 恢复</string>
     <string name="settings_webdav_restore_dialog_message">从 WebDAV 恢复后，当前所有数据都会被覆盖。是否继续？</string>

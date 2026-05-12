@@ -16,6 +16,9 @@ interface InventoryDao {
     @Query("SELECT * FROM inventory_categories WHERE id = :id")
     suspend fun getCategoryById(id: String): InventoryCategoryEntity?
 
+    @Query("SELECT * FROM inventory_categories WHERE isDeleted = 0")
+    suspend fun watchCategoriesSnapshot(): List<InventoryCategoryEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategory(category: InventoryCategoryEntity)
 

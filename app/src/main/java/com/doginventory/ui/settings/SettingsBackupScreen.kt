@@ -53,6 +53,7 @@ fun SettingsBackupScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var showRestoreConfirmDialog by remember { mutableStateOf(false) }
+    var showFlutterMigrationConfirmDialog by remember { mutableStateOf(false) }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
@@ -66,6 +67,13 @@ fun SettingsBackupScreen(
     ) { uri: Uri? ->
         if (uri != null) {
             viewModel.restoreBackup(uri)
+        }
+    }
+    val migrateFlutterBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.migrateFromFlutterBackup(uri)
         }
     }
 
@@ -105,6 +113,57 @@ fun SettingsBackupScreen(
             dismissButton = {
                 TextButton(onClick = { showRestoreConfirmDialog = false }) {
                     Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    if (showFlutterMigrationConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showFlutterMigrationConfirmDialog = false },
+            title = { Text(stringResource(R.string.settings_flutter_migration_dialog_title)) },
+            text = { Text(stringResource(R.string.settings_flutter_migration_dialog_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showFlutterMigrationConfirmDialog = false
+                        migrateFlutterBackupLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed"))
+                    }
+                ) {
+                    Text(stringResource(R.string.common_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFlutterMigrationConfirmDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    viewModel.migrationResult?.let { result ->
+        AlertDialog(
+            onDismissRequest = viewModel::consumeMigrationResult,
+            title = { Text(stringResource(R.string.settings_flutter_migration_result_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.settings_flutter_migration_result_message,
+                        result.categoriesImported,
+                        result.inventoryItemsImported,
+                        result.reminderRulesImported,
+                        result.shoppingItemsImported,
+                        if (result.warnings.isEmpty()) {
+                            stringResource(R.string.settings_flutter_migration_no_warning)
+                        } else {
+                            result.warnings.joinToString(separator = "\n")
+                        }
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::consumeMigrationResult) {
+                    Text(stringResource(R.string.common_confirm))
                 }
             }
         )
@@ -174,6 +233,27 @@ fun SettingsBackupScreen(
                     headlineContent = { Text(stringResource(R.string.settings_backup_restore_title)) },
                     supportingContent = { Text(stringResource(R.string.settings_backup_restore_body)) },
                     leadingContent = { Text("♻️", fontSize = 24.sp) }
+                )
+            }
+
+            AppCard(modifier = Modifier.fillMaxWidth()) {
+                ListItem(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !viewModel.isBusy) {
+                            showFlutterMigrationConfirmDialog = true
+                        },
+                    headlineContent = { Text(stringResource(R.string.settings_flutter_migration_title)) },
+                    supportingContent = { Text(stringResource(R.string.settings_flutter_migration_body)) },
+                    leadingContent = { Text("🚚", fontSize = 24.sp) },
+                    trailingContent = {
+                        if (viewModel.isBusy) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
                 )
             }
 

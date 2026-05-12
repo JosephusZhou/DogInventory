@@ -10,6 +10,9 @@ import androidx.lifecycle.viewModelScope
 import com.doginventory.R
 import com.doginventory.backup.BackupException
 import com.doginventory.backup.BackupRestoreCoordinator
+import com.doginventory.migration.flutter.FlutterBackupMigrator
+import com.doginventory.migration.flutter.FlutterMigrationException
+import com.doginventory.migration.flutter.FlutterMigrationResult
 import com.doginventory.permission.StoragePermissionCoordinator
 import com.doginventory.settings.PreferencesService
 import com.doginventory.ui.inventory.formatInventoryDateTime
@@ -18,6 +21,7 @@ import kotlinx.coroutines.launch
 class SettingsBackupViewModel(
     private val resources: Resources,
     private val coordinator: BackupRestoreCoordinator,
+    private val flutterBackupMigrator: FlutterBackupMigrator,
     private val storagePermissionCoordinator: StoragePermissionCoordinator,
     private val preferencesService: PreferencesService
 ) : ViewModel() {
@@ -31,6 +35,9 @@ class SettingsBackupViewModel(
         private set
 
     var restoreCompleted by mutableStateOf(false)
+        private set
+
+    var migrationResult by mutableStateOf<FlutterMigrationResult?>(null)
         private set
 
     val requiresLegacyStoragePermission: Boolean
@@ -77,6 +84,26 @@ class SettingsBackupViewModel(
         }
     }
 
+    fun migrateFromFlutterBackup(sourceUri: Uri) {
+        viewModelScope.launch {
+            isBusy = true
+            errorMessage = null
+            successMessage = null
+            migrationResult = null
+            try {
+                val result = flutterBackupMigrator.migrate(sourceUri)
+                migrationResult = result
+                successMessage = resources.getString(R.string.settings_flutter_migration_success)
+            } catch (error: FlutterMigrationException) {
+                errorMessage = error.message
+            } catch (error: Exception) {
+                errorMessage = error.message ?: resources.getString(R.string.settings_flutter_migration_failed)
+            } finally {
+                isBusy = false
+            }
+        }
+    }
+
     fun consumeMessages() {
         errorMessage = null
         successMessage = null
@@ -84,6 +111,10 @@ class SettingsBackupViewModel(
 
     fun consumeRestoreCompleted() {
         restoreCompleted = false
+    }
+
+    fun consumeMigrationResult() {
+        migrationResult = null
     }
 
     fun requestLegacyStoragePermission(onResult: (Boolean) -> Unit) {

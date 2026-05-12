@@ -61,9 +61,10 @@ class ViewModelFactory(
                 @Suppress("UNCHECKED_CAST")
                 SettingsBackupViewModel(
                     resources = context.resources,
-                    app.backupRestoreCoordinator,
-                    coordinator,
-                    app.preferencesService
+                    coordinator = app.backupRestoreCoordinator,
+                    flutterBackupMigrator = app.flutterBackupMigrator,
+                    storagePermissionCoordinator = coordinator,
+                    preferencesService = app.preferencesService
                 ) as T
             }
             modelClass.isAssignableFrom(SettingsWebdavSyncViewModel::class.java) -> {
