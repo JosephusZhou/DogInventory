@@ -266,6 +266,7 @@ fun InventoryDetailScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        viewModel.confirmDelete = false
                         viewModel.deleteItem(onNavigateBack)
                     },
                     colors = ButtonDefaults.buttonColors(

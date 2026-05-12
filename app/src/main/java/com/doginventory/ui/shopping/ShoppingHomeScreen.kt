@@ -156,8 +156,9 @@ fun ShoppingHomeScreen(
             text = { Text(stringResource(R.string.shopping_delete_message, deleteTarget?.name ?: "")) },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.deleteItem(deleteTarget!!.id)
+                    val targetId = deleteTarget?.id ?: return@Button
                     deleteTarget = null
+                    viewModel.deleteItem(targetId)
                 }) { Text(stringResource(R.string.common_delete)) }
             },
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.common_cancel)) } }
@@ -172,8 +173,8 @@ fun ShoppingHomeScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.deleteDoneItems()
                         confirmClearDone = false
+                        viewModel.deleteDoneItems()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = DogInventoryTheme.semanticColors.danger,
