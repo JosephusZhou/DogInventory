@@ -2,8 +2,23 @@ package com.doginventory.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -27,12 +42,20 @@ import com.doginventory.R
 import com.doginventory.data.repository.InventoryRepository
 import com.doginventory.permission.StoragePermissionCoordinator
 import com.doginventory.reminder.InventoryReminderScheduler
-import com.doginventory.ui.inventory.*
+import com.doginventory.ui.inventory.CategoryEditorScreen
+import com.doginventory.ui.inventory.InventoryCategoriesScreen
+import com.doginventory.ui.inventory.InventoryCategoriesViewModel
+import com.doginventory.ui.inventory.InventoryDetailScreen
+import com.doginventory.ui.inventory.InventoryEditorScreen
+import com.doginventory.ui.inventory.InventoryHomeScreen
+import com.doginventory.ui.settings.SettingsBackupScreen
+import com.doginventory.ui.settings.SettingsBackupViewModel
+import com.doginventory.ui.settings.SettingsScreen
+import com.doginventory.ui.settings.SettingsWebdavSyncScreen
+import com.doginventory.ui.settings.SettingsWebdavSyncViewModel
 import com.doginventory.ui.shopping.ShoppingEditorScreen
-import com.doginventory.ui.shopping.ShoppingEditorViewModel
 import com.doginventory.ui.shopping.ShoppingHomeScreen
-import com.doginventory.ui.shopping.ShoppingViewModel
-import com.doginventory.ui.settings.*
+import com.doginventory.ui.shopping.ShoppingSearchScreen
 import com.doginventory.ui.theme.AppThemeMode
 import com.doginventory.ui.theme.SystemBarsStyle
 
@@ -44,6 +67,7 @@ sealed class Screen(val route: String, val labelRes: Int, val iconRes: Int, val 
     object ShoppingEditor : Screen("shopping_editor?itemId={itemId}", 0, 0, 0) {
         fun createRoute(itemId: String?) = if (itemId != null) "shopping_editor?itemId=$itemId" else "shopping_editor"
     }
+    object ShoppingSearch : Screen("shopping_search", 0, 0, 0)
     object Editor : Screen("editor?itemId={itemId}", 0, 0, 0) {
         fun createRoute(itemId: String?) = if (itemId != null) "editor?itemId=$itemId" else "editor"
     }
@@ -95,6 +119,7 @@ fun MainScreen(
                 onRestartApp = onRestartApp,
                 onNavigateToEditor = { itemId -> navController.navigate(Screen.Editor.createRoute(itemId)) },
                 onNavigateToShoppingEditor = { itemId -> navController.navigate(Screen.ShoppingEditor.createRoute(itemId)) },
+                onNavigateToShoppingSearch = { navController.navigate(Screen.ShoppingSearch.route) },
                 onNavigateToCategories = { navController.navigate(Screen.Categories.route) },
                 onNavigateToDetail = { itemId -> navController.navigate(Screen.Detail.createRoute(itemId)) },
                 onNavigateToBackup = { navController.navigate(Screen.SettingsBackup.route) },
@@ -116,6 +141,13 @@ fun MainScreen(
             ShoppingEditorScreen(
                 viewModel = viewModel(factory = ViewModelFactory(repository, itemId = itemId)),
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.ShoppingSearch.route) {
+            ShoppingSearchScreen(
+                viewModel = viewModel(factory = ViewModelFactory(repository)),
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEditor = { itemId -> navController.navigate(Screen.ShoppingEditor.createRoute(itemId)) }
             )
         }
         composable(
@@ -222,6 +254,7 @@ private fun MainShellScreen(
     onRestartApp: () -> Unit,
     onNavigateToEditor: (String?) -> Unit,
     onNavigateToShoppingEditor: (String?) -> Unit,
+    onNavigateToShoppingSearch: () -> Unit,
     onNavigateToCategories: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToBackup: () -> Unit,
@@ -267,7 +300,8 @@ private fun MainShellScreen(
             composable(Screen.Shopping.route) {
                 ShoppingHomeScreen(
                     viewModel = viewModel(factory = ViewModelFactory(repository)),
-                    onNavigateToEditor = onNavigateToShoppingEditor
+                    onNavigateToEditor = onNavigateToShoppingEditor,
+                    onNavigateToSearch = onNavigateToShoppingSearch
                 )
             }
             composable(Screen.Settings.route) {

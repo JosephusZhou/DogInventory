@@ -80,6 +80,10 @@
     <string name="shopping_note_label">备注</string>
     <string name="shopping_note_placeholder">可填写购买要求或补充说明</string>
     <string name="shopping_clear_done">清空已买</string>
+    <string name="shopping_search_action">搜索待买</string>
+    <string name="shopping_search_placeholder">搜索待买或备注</string>
+    <string name="shopping_search_empty_title">没有找到相关内容</string>
+    <string name="shopping_search_empty_body">换个关键词试试，或返回查看全部待买记录。</string>
     <string name="shopping_empty_title">还没有待买记录</string>
     <string name="shopping_empty_body">从第一件需要购买的东西开始</string>
     <string name="shopping_add_button">添加待买</string>
@@ -87,7 +91,7 @@
     <string name="shopping_done_group">已买</string>
     <string name="shopping_delete_title">删除待买</string>
     <string name="shopping_delete_message">确定删除“%1$s”吗？</string>
-    <string name="shopping_clear_confirm_title">清空确认</string>
+    <string name="shopping_clear_confirm_title">清空已买</string>
     <string name="shopping_clear_confirm_message">确定要清空所有已买记录吗？此操作不可撤销。</string>
     <string name="shopping_clear_confirm_action">清空</string>
     <string name="shopping_note_prefix">备注：%1$s</string>

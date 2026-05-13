@@ -1,5 +1,8 @@
 package com.doginventory.ui.shopping
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,13 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -26,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,31 +39,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.doginventory.R
 import com.doginventory.data.entity.ShoppingItemEntity
 import com.doginventory.ui.components.AppTopBar
 import com.doginventory.ui.components.PageBackground
-import com.doginventory.ui.theme.DogInventoryTheme
 import com.doginventory.ui.theme.DarkAccent
+import com.doginventory.ui.theme.DogInventoryTheme
 import com.doginventory.ui.theme.LightAccent
 import com.doginventory.ui.theme.White
 
 @Composable
 fun ShoppingHomeScreen(
     viewModel: ShoppingViewModel,
-    onNavigateToEditor: (String?) -> Unit
+    onNavigateToEditor: (String?) -> Unit,
+    onNavigateToSearch: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val isDarkTheme = isSystemInDarkTheme()
+    val fabAccentColor = if (isDarkTheme) DarkAccent else LightAccent
     var showDone by remember { mutableStateOf(true) }
     var deleteTarget by remember { mutableStateOf<ShoppingItemEntity?>(null) }
     var confirmClearDone by remember { mutableStateOf(false) }
@@ -71,8 +72,17 @@ fun ShoppingHomeScreen(
             AppTopBar(
                 title = stringResource(R.string.shopping_title),
                 actions = {
-                    TextButton(onClick = { confirmClearDone = true }) {
-                        Text(stringResource(R.string.shopping_clear_done))
+                    IconButton(onClick = onNavigateToSearch) {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = stringResource(R.string.shopping_search_action)
+                        )
+                    }
+                    IconButton(onClick = { confirmClearDone = true }) {
+                        Icon(
+                            Icons.Default.DeleteOutline,
+                            contentDescription = stringResource(R.string.shopping_clear_done)
+                        )
                     }
                 }
             )
@@ -82,58 +92,17 @@ fun ShoppingHomeScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Spacer(modifier = Modifier.height(padding.calculateTopPadding()))
-                    if (state.pendingItems.isEmpty() && state.doneItems.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("🛒", fontSize = 40.sp)
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(stringResource(R.string.shopping_empty_title), style = MaterialTheme.typography.titleMedium)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(stringResource(R.string.shopping_empty_body), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f))
-                            }
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 100.dp),
-                            verticalArrangement = Arrangement.spacedBy(0.dp)
-                        ) {
-                            item { ShoppingGroupHeader(stringResource(R.string.shopping_pending_group), state.pendingItems.size) }
-                            items(state.pendingItems, key = { it.id }) { item ->
-                                ShoppingItemCard(
-                                    item = item,
-                                    onClick = { onNavigateToEditor(item.id) },
-                                    onToggleDone = { viewModel.toggleDone(item, true) },
-                                    onDelete = { deleteTarget = item }
-                                )
-                            }
-                            if (state.doneItems.isNotEmpty()) {
-                                item { Spacer(modifier = Modifier.height(8.dp)) }
-                                item {
-                                    ShoppingGroupHeader(
-                                        title = stringResource(R.string.shopping_done_group),
-                                        count = state.doneItems.size,
-                                        collapsible = true,
-                                        expanded = showDone,
-                                        onToggle = { showDone = !showDone }
-                                    )
-                                }
-                                if (showDone) {
-                                    items(state.doneItems, key = { it.id }) { item ->
-                                        ShoppingItemCard(
-                                            item = item,
-                                            onClick = { onNavigateToEditor(item.id) },
-                                            onToggleDone = { viewModel.toggleDone(item, false) },
-                                            onDelete = { deleteTarget = item }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    ShoppingListContent(
+                        pendingItems = state.pendingItems,
+                        doneItems = state.doneItems,
+                        showDone = showDone,
+                        bottomPadding = 100.dp,
+                        onToggleShowDone = { showDone = !showDone },
+                        onItemClick = { onNavigateToEditor(it.id) },
+                        onToggleDone = { item, done -> viewModel.toggleDone(item, done) },
+                        onDelete = { deleteTarget = it },
+                        emptyContent = { ShoppingEmptyState() }
+                    )
                 }
                 ExtendedFloatingActionButton(
                     onClick = { onNavigateToEditor(null) },
@@ -142,7 +111,7 @@ fun ShoppingHomeScreen(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 16.dp),
-                    containerColor = if (isDarkTheme) DarkAccent else LightAccent,
+                    containerColor = fabAccentColor,
                     contentColor = White
                 )
             }
@@ -150,18 +119,13 @@ fun ShoppingHomeScreen(
     }
 
     if (deleteTarget != null) {
-        AlertDialog(
-            onDismissRequest = { deleteTarget = null },
-            title = { Text(stringResource(R.string.shopping_delete_title)) },
-            text = { Text(stringResource(R.string.shopping_delete_message, deleteTarget?.name ?: "")) },
-            confirmButton = {
-                Button(onClick = {
-                    val targetId = deleteTarget?.id ?: return@Button
-                    deleteTarget = null
-                    viewModel.deleteItem(targetId)
-                }) { Text(stringResource(R.string.common_delete)) }
-            },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.common_cancel)) } }
+        ShoppingDeleteDialog(
+            target = deleteTarget,
+            onDismiss = { deleteTarget = null },
+            onConfirmDelete = { targetId ->
+                deleteTarget = null
+                viewModel.deleteItem(targetId)
+            }
         )
     }
 
@@ -189,6 +153,107 @@ fun ShoppingHomeScreen(
                     Text(stringResource(R.string.common_cancel))
                 }
             }
+        )
+    }
+}
+
+@Composable
+internal fun ShoppingDeleteDialog(
+    target: ShoppingItemEntity?,
+    onDismiss: () -> Unit,
+    onConfirmDelete: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.shopping_delete_title)) },
+        text = { Text(stringResource(R.string.shopping_delete_message, target?.name ?: "")) },
+        confirmButton = {
+            Button(onClick = {
+                val targetId = target?.id ?: return@Button
+                onConfirmDelete(targetId)
+            }) {
+                Text(stringResource(R.string.common_delete))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+internal fun ShoppingListContent(
+    pendingItems: List<ShoppingItemEntity>,
+    doneItems: List<ShoppingItemEntity>,
+    showDone: Boolean,
+    bottomPadding: androidx.compose.ui.unit.Dp,
+    onToggleShowDone: () -> Unit,
+    onItemClick: (ShoppingItemEntity) -> Unit,
+    onToggleDone: (ShoppingItemEntity, Boolean) -> Unit,
+    onDelete: (ShoppingItemEntity) -> Unit,
+    emptyContent: @Composable () -> Unit
+) {
+    if (pendingItems.isEmpty() && doneItems.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            emptyContent()
+        }
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = bottomPadding),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+        item { ShoppingGroupHeader(stringResource(R.string.shopping_pending_group), pendingItems.size) }
+        items(pendingItems, key = { it.id }) { item ->
+            ShoppingItemCard(
+                item = item,
+                onClick = { onItemClick(item) },
+                onToggleDone = { onToggleDone(item, true) },
+                onDelete = { onDelete(item) }
+            )
+        }
+        if (doneItems.isNotEmpty()) {
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item {
+                ShoppingGroupHeader(
+                    title = stringResource(R.string.shopping_done_group),
+                    count = doneItems.size,
+                    collapsible = true,
+                    expanded = showDone,
+                    onToggle = onToggleShowDone
+                )
+            }
+            if (showDone) {
+                items(doneItems, key = { it.id }) { item ->
+                    ShoppingItemCard(
+                        item = item,
+                        onClick = { onItemClick(item) },
+                        onToggleDone = { onToggleDone(item, false) },
+                        onDelete = { onDelete(item) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShoppingEmptyState() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("🛒", fontSize = 40.sp)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(stringResource(R.string.shopping_empty_title), style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            stringResource(R.string.shopping_empty_body),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
         )
     }
 }

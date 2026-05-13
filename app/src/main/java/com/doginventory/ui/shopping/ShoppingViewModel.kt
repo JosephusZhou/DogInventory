@@ -7,8 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.doginventory.data.entity.ShoppingItemEntity
 import com.doginventory.data.repository.InventoryRepository
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -19,9 +23,18 @@ data class ShoppingHomeState(
     val doneItems: List<ShoppingItemEntity> = emptyList()
 )
 
+data class ShoppingSearchState(
+    val query: String = "",
+    val pendingItems: List<ShoppingItemEntity> = emptyList(),
+    val doneItems: List<ShoppingItemEntity> = emptyList()
+)
+
+@OptIn(FlowPreview::class)
 class ShoppingViewModel(
     private val repository: InventoryRepository
 ) : ViewModel() {
+    private val searchQuery = MutableStateFlow("")
+
     val state: StateFlow<ShoppingHomeState> = repository.shoppingItems
         .map { items ->
             ShoppingHomeState(
@@ -30,6 +43,31 @@ class ShoppingViewModel(
             )
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ShoppingHomeState())
+
+    val searchState: StateFlow<ShoppingSearchState> = combine(
+        searchQuery,
+        searchQuery.debounce(250),
+        repository.shoppingItems
+    ) { immediateQuery, debouncedQuery, items ->
+        val keyword = debouncedQuery.trim()
+        val filteredItems = if (keyword.isBlank()) {
+            items
+        } else {
+            items.filter { item ->
+                item.name.contains(keyword, ignoreCase = true) ||
+                    item.note.contains(keyword, ignoreCase = true)
+            }
+        }
+        ShoppingSearchState(
+            query = immediateQuery,
+            pendingItems = filteredItems.filter { !it.isDone },
+            doneItems = filteredItems.filter { it.isDone }
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ShoppingSearchState())
+
+    fun updateSearchQuery(query: String) {
+        searchQuery.value = query
+    }
 
     fun toggleDone(item: ShoppingItemEntity, done: Boolean) {
         viewModelScope.launch {
