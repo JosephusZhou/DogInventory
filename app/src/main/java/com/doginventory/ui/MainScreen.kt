@@ -48,6 +48,7 @@ import com.doginventory.ui.inventory.InventoryCategoriesViewModel
 import com.doginventory.ui.inventory.InventoryDetailScreen
 import com.doginventory.ui.inventory.InventoryEditorScreen
 import com.doginventory.ui.inventory.InventoryHomeScreen
+import com.doginventory.ui.inventory.InventorySearchScreen
 import com.doginventory.ui.settings.SettingsBackupScreen
 import com.doginventory.ui.settings.SettingsBackupViewModel
 import com.doginventory.ui.settings.SettingsScreen
@@ -68,6 +69,7 @@ sealed class Screen(val route: String, val labelRes: Int, val iconRes: Int, val 
         fun createRoute(itemId: String?) = if (itemId != null) "shopping_editor?itemId=$itemId" else "shopping_editor"
     }
     object ShoppingSearch : Screen("shopping_search", 0, 0, 0)
+    object InventorySearch : Screen("inventory_search", 0, 0, 0)
     object Editor : Screen("editor?itemId={itemId}", 0, 0, 0) {
         fun createRoute(itemId: String?) = if (itemId != null) "editor?itemId=$itemId" else "editor"
     }
@@ -120,6 +122,7 @@ fun MainScreen(
                 onNavigateToEditor = { itemId -> navController.navigate(Screen.Editor.createRoute(itemId)) },
                 onNavigateToShoppingEditor = { itemId -> navController.navigate(Screen.ShoppingEditor.createRoute(itemId)) },
                 onNavigateToShoppingSearch = { navController.navigate(Screen.ShoppingSearch.route) },
+                onNavigateToInventorySearch = { navController.navigate(Screen.InventorySearch.route) },
                 onNavigateToCategories = { navController.navigate(Screen.Categories.route) },
                 onNavigateToDetail = { itemId -> navController.navigate(Screen.Detail.createRoute(itemId)) },
                 onNavigateToBackup = { navController.navigate(Screen.SettingsBackup.route) },
@@ -148,6 +151,13 @@ fun MainScreen(
                 viewModel = viewModel(factory = ViewModelFactory(repository)),
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToEditor = { itemId -> navController.navigate(Screen.ShoppingEditor.createRoute(itemId)) }
+            )
+        }
+        composable(Screen.InventorySearch.route) {
+            InventorySearchScreen(
+                viewModel = viewModel(factory = ViewModelFactory(repository)),
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { itemId -> navController.navigate(Screen.Detail.createRoute(itemId)) }
             )
         }
         composable(
@@ -255,6 +265,7 @@ private fun MainShellScreen(
     onNavigateToEditor: (String?) -> Unit,
     onNavigateToShoppingEditor: (String?) -> Unit,
     onNavigateToShoppingSearch: () -> Unit,
+    onNavigateToInventorySearch: () -> Unit,
     onNavigateToCategories: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToBackup: () -> Unit,
@@ -294,7 +305,8 @@ private fun MainShellScreen(
                     viewModel = viewModel(factory = ViewModelFactory(repository)),
                     onNavigateToEditor = onNavigateToEditor,
                     onNavigateToCategories = onNavigateToCategories,
-                    onNavigateToDetail = onNavigateToDetail
+                    onNavigateToDetail = onNavigateToDetail,
+                    onNavigateToSearch = onNavigateToInventorySearch
                 )
             }
             composable(Screen.Shopping.route) {

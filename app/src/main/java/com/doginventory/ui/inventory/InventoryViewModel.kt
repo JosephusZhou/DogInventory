@@ -5,7 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.doginventory.data.entity.InventoryCategoryEntity
 import com.doginventory.data.entity.InventoryItemEntity
 import com.doginventory.data.repository.InventoryRepository
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.stateIn
 
 data class InventoryHomeState(
     val items: List<InventoryItemUiModel> = emptyList(),
@@ -32,12 +39,19 @@ data class InventoryItemUiModel(
     val expireDateText: String? = null
 )
 
+data class InventorySearchState(
+    val query: String = "",
+    val items: List<InventoryItemUiModel> = emptyList()
+)
+
 enum class InventoryFilter {
     All, Soon, Expired
 }
 
+@OptIn(FlowPreview::class)
 class InventoryViewModel(private val repository: InventoryRepository) : ViewModel() {
     private val _filter = MutableStateFlow(InventoryFilter.All)
+    private val _searchQuery = MutableStateFlow("")
 
     private val allUiModels: Flow<List<InventoryItemUiModel>> = combine(
         repository.activeItems,
@@ -89,5 +103,29 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
 
     fun setFilter(filter: InventoryFilter) {
         _filter.value = filter
+    }
+
+    val searchState: StateFlow<InventorySearchState> = combine(
+        _searchQuery,
+        _searchQuery.debounce(300),
+        allUiModels
+    ) { immediateQuery, debouncedQuery, uiModels ->
+        val keyword = debouncedQuery.trim()
+        val filteredItems = if (keyword.isBlank()) {
+            uiModels
+        } else {
+            uiModels.filter { model ->
+                model.item.name.contains(keyword, ignoreCase = true) ||
+                    (model.category?.name?.contains(keyword, ignoreCase = true) == true)
+            }
+        }
+        InventorySearchState(
+            query = immediateQuery,
+            items = filteredItems
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InventorySearchState())
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 }
