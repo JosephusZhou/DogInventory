@@ -1,15 +1,32 @@
 package com.doginventory.ui.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.doginventory.R
@@ -19,7 +36,6 @@ import com.doginventory.ui.components.SectionTitle
 import com.doginventory.ui.components.cardContainerColor
 import com.doginventory.ui.theme.AppThemeMode
 import com.doginventory.ui.theme.DogInventoryTheme
-import com.doginventory.ui.theme.White
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +43,8 @@ fun SettingsScreen(
     themeMode: AppThemeMode,
     isNotificationPermissionGranted: Boolean,
     canScheduleExactAlarms: Boolean,
-    onRequestAppReminderPermissions: () -> Unit,
+    onRequestNotificationPermission: () -> Unit,
+    onOpenAppPermissionSettings: () -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onThemeModeChange: (AppThemeMode) -> Unit,
     onNavigateToCategories: () -> Unit,
@@ -55,6 +72,7 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                Spacer(modifier = Modifier.height(4.dp))
                 SectionTitle(stringResource(R.string.settings_section_reminder))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -65,31 +83,55 @@ fun SettingsScreen(
                     Column {
                         SettingsItem(
                             icon = "🔔",
-                            title = stringResource(R.string.settings_app_reminder_title),
-                            subtitle = when {
-                                !isNotificationPermissionGranted -> stringResource(R.string.settings_app_reminder_need_notification)
-                                !canScheduleExactAlarms -> stringResource(R.string.settings_app_reminder_need_exact_alarm)
-                                else -> stringResource(R.string.settings_app_reminder_enabled_desc)
+                            title = stringResource(R.string.settings_notification_permission_title),
+                            subtitle = if (isNotificationPermissionGranted) {
+                                stringResource(R.string.settings_notification_permission_granted)
+                            } else {
+                                stringResource(R.string.settings_notification_permission_not_granted)
                             },
-                            trailingText = if (isNotificationPermissionGranted && canScheduleExactAlarms) {
+                            trailingText = if (isNotificationPermissionGranted) {
                                 stringResource(R.string.settings_enabled)
                             } else {
                                 stringResource(R.string.settings_go_enable)
                             },
-                            trailingColor = if (isNotificationPermissionGranted && canScheduleExactAlarms) {
+                            trailingColor = if (isNotificationPermissionGranted) {
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 DogInventoryTheme.semanticColors.warning
                             },
-                        onClick = {
-                            if (!isNotificationPermissionGranted) {
-                                onRequestAppReminderPermissions()
-                            } else if (!canScheduleExactAlarms) {
-                                onOpenExactAlarmSettings()
+                            onClick = {
+                                if (isNotificationPermissionGranted) {
+                                    onOpenAppPermissionSettings()
+                                } else {
+                                    onRequestNotificationPermission()
+                                }
                             }
-                        }
-                    )
-                }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                        )
+                        SettingsItem(
+                            icon = "⏰",
+                            title = stringResource(R.string.settings_exact_alarm_permission_title),
+                            subtitle = if (canScheduleExactAlarms) {
+                                stringResource(R.string.settings_exact_alarm_permission_granted)
+                            } else {
+                                stringResource(R.string.settings_exact_alarm_permission_not_granted)
+                            },
+                            trailingText = if (canScheduleExactAlarms) {
+                                stringResource(R.string.settings_enabled)
+                            } else {
+                                stringResource(R.string.settings_go_enable)
+                            },
+                            trailingColor = if (canScheduleExactAlarms) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                DogInventoryTheme.semanticColors.warning
+                            },
+                            onClick = onOpenExactAlarmSettings
+                        )
+                    }
                 }
 
                 SectionTitle(stringResource(R.string.settings_section_appearance))

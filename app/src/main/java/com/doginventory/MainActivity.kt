@@ -1,22 +1,18 @@
 package com.doginventory
 
-import android.content.res.Configuration
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.content.ContextCompat
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.view.WindowCompat
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.doginventory.backup.BackupRestoreCoordinator
 import com.doginventory.data.entity.InventoryCategoryEntity
@@ -82,7 +78,8 @@ class MainActivity : ComponentActivity() {
                         themeMode = themeMode,
                         isNotificationPermissionGranted = isNotificationPermissionGranted,
                         canScheduleExactAlarms = canScheduleExactAlarms,
-                        onRequestAppReminderPermissions = permissionCoordinator::requestAppReminderPermissions,
+                        onRequestNotificationPermission = { permissionCoordinator.requestNotificationPermission() },
+                        onOpenAppPermissionSettings = permissionCoordinator::openAppPermissionSettings,
                         onOpenExactAlarmSettings = permissionCoordinator::openExactAlarmSettings,
                         onThemeModeChange = { mode ->
                             themeMode = mode
