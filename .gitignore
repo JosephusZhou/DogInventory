@@ -12,3 +12,4 @@ local.properties
 .vscode
 .kotlin/
 app/build
+key.properties
