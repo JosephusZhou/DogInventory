@@ -13,6 +13,9 @@
     <string name="inventory_filter_all">全部</string>
     <string name="inventory_filter_soon">即将到期</string>
     <string name="inventory_filter_expired">已过期</string>
+    <string name="inventory_sort_default">排序：默认</string>
+    <string name="inventory_sort_expire_ascending">排序：过期时间升序</string>
+    <string name="inventory_sort_expire_descending">排序：过期时间降序</string>
     <string name="inventory_soon_subtitle">30 天内</string>
     <string name="inventory_expired_subtitle">需要处理</string>
     <string name="inventory_add_button">添加存货</string>

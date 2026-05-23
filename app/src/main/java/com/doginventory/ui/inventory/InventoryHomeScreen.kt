@@ -14,9 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Tune
@@ -45,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.doginventory.R
+import com.doginventory.data.entity.InventoryCategoryEntity
 import com.doginventory.ui.components.AppTopBar
 import com.doginventory.ui.components.PageBackground
 import com.doginventory.ui.components.cardContainerColor
@@ -106,7 +111,14 @@ fun InventoryHomeScreen(
                         item {
                             FilterRow(
                                 selectedFilter = state.filter,
-                                onFilterSelected = { viewModel.setFilter(it) }
+                                sortOrder = state.sortOrder,
+                                onFilterSelected = { viewModel.setFilter(it) },
+                                onSortClick = viewModel::toggleSortOrder
+                            )
+                            CategoryFilterRow(
+                                categories = state.categories,
+                                selectedCategoryId = state.selectedCategoryId,
+                                onCategorySelected = viewModel::setSelectedCategory
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -132,7 +144,7 @@ fun InventoryHomeScreen(
                         if (state.isFilterEmpty) {
                             item {
                                 EmptyInventoryFilterState(
-                                    onReset = { viewModel.setFilter(InventoryFilter.All) }
+                                    onReset = viewModel::resetFilters
                                 )
                             }
                         } else {
@@ -164,34 +176,110 @@ fun InventoryHomeScreen(
 @Composable
 fun FilterRow(
     selectedFilter: InventoryFilter,
-    onFilterSelected: (InventoryFilter) -> Unit
+    sortOrder: InventorySortOrder,
+    onFilterSelected: (InventoryFilter) -> Unit,
+    onSortClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        InventoryFilter.values().forEach { filter ->
-            FilterChip(
-                selected = selectedFilter == filter,
-                onClick = { onFilterSelected(filter) },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = cardContainerColor(),
-                    selectedContainerColor = LightPrimary.copy(alpha = 0.2f),
-                    labelColor = MaterialTheme.colorScheme.onSurface,
-                    selectedLabelColor = MaterialTheme.colorScheme.onSurface
-                ),
-                label = {
-                    Text(
-                        when (filter) {
-                            InventoryFilter.All -> stringResource(R.string.inventory_filter_all)
-                            InventoryFilter.Soon -> stringResource(R.string.inventory_filter_soon)
-                            InventoryFilter.Expired -> stringResource(R.string.inventory_filter_expired)
-                        }
-                    )
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            InventoryFilter.values().forEach { filter ->
+                FilterChip(
+                    selected = selectedFilter == filter,
+                    onClick = { onFilterSelected(filter) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = cardContainerColor(),
+                        selectedContainerColor = LightPrimary.copy(alpha = 0.2f),
+                        labelColor = MaterialTheme.colorScheme.onSurface,
+                        selectedLabelColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    label = {
+                        Text(
+                            when (filter) {
+                                InventoryFilter.All -> stringResource(R.string.inventory_filter_all)
+                                InventoryFilter.Soon -> stringResource(R.string.inventory_filter_soon)
+                                InventoryFilter.Expired -> stringResource(R.string.inventory_filter_expired)
+                            }
+                        )
+                    }
+                )
+            }
+        }
+        IconButton(
+            onClick = onSortClick,
+            modifier = Modifier.size(36.dp)
+        ) {
+            Icon(
+                imageVector = when (sortOrder) {
+                    InventorySortOrder.Default -> Icons.AutoMirrored.Rounded.Sort
+                    InventorySortOrder.ExpireAtAscending -> Icons.Rounded.ArrowUpward
+                    InventorySortOrder.ExpireAtDescending -> Icons.Rounded.ArrowDownward
+                },
+                contentDescription = when (sortOrder) {
+                    InventorySortOrder.Default -> stringResource(R.string.inventory_sort_default)
+                    InventorySortOrder.ExpireAtAscending -> stringResource(R.string.inventory_sort_expire_ascending)
+                    InventorySortOrder.ExpireAtDescending -> stringResource(R.string.inventory_sort_expire_descending)
                 }
             )
         }
     }
+}
+
+@Composable
+fun CategoryFilterRow(
+    categories: List<InventoryCategoryEntity>,
+    selectedCategoryId: String?,
+    onCategorySelected: (String?) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item(key = "all") {
+            CategoryFilterChip(
+                label = stringResource(R.string.inventory_filter_all),
+                selected = selectedCategoryId == null,
+                onClick = { onCategorySelected(null) }
+            )
+        }
+        items(
+            items = categories,
+            key = { it.id }
+        ) { category ->
+            CategoryFilterChip(
+                label = category.name,
+                selected = selectedCategoryId == category.id,
+                onClick = { onCategorySelected(category.id) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = cardContainerColor(),
+            selectedContainerColor = LightPrimary.copy(alpha = 0.2f),
+            labelColor = MaterialTheme.colorScheme.onSurface,
+            selectedLabelColor = MaterialTheme.colorScheme.onSurface
+        ),
+        label = {
+            Text(label)
+        }
+    )
 }
 
 @Composable

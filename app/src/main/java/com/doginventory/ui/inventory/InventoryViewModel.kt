@@ -19,6 +19,8 @@ data class InventoryHomeState(
     val allItems: List<InventoryItemUiModel> = emptyList(),
     val categories: List<InventoryCategoryEntity> = emptyList(),
     val filter: InventoryFilter = InventoryFilter.All,
+    val sortOrder: InventorySortOrder = InventorySortOrder.Default,
+    val selectedCategoryId: String? = null,
     val soonCount: Int = 0,
     val expiredCount: Int = 0,
     val isLoading: Boolean = true
@@ -48,9 +50,17 @@ enum class InventoryFilter {
     All, Soon, Expired
 }
 
+enum class InventorySortOrder {
+    Default,
+    ExpireAtAscending,
+    ExpireAtDescending
+}
+
 @OptIn(FlowPreview::class)
 class InventoryViewModel(private val repository: InventoryRepository) : ViewModel() {
     private val _filter = MutableStateFlow(InventoryFilter.All)
+    private val _sortOrder = MutableStateFlow(InventorySortOrder.Default)
+    private val _selectedCategoryId = MutableStateFlow<String?>(null)
     private val _searchQuery = MutableStateFlow("")
 
     private val allUiModels: Flow<List<InventoryItemUiModel>> = combine(
@@ -81,20 +91,30 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
     val state: StateFlow<InventoryHomeState> = combine(
         repository.allCategories,
         allUiModels,
-        _filter
-    ) { categories, uiModels, filter ->
-        val visibleModels = uiModels.filter {
-            when (filter) {
+        _filter,
+        _sortOrder,
+        _selectedCategoryId
+    ) { categories, uiModels, filter, sortOrder, selectedCategoryId ->
+        val effectiveSelectedCategoryId = selectedCategoryId?.takeIf { id ->
+            categories.any { it.id == id }
+        }
+        val sortedUiModels = uiModels.sortedForDisplay(sortOrder)
+        val visibleModels = sortedUiModels.filter {
+            val matchesFilter = when (filter) {
                 InventoryFilter.All -> true
                 InventoryFilter.Soon -> it.isSoon
                 InventoryFilter.Expired -> it.isExpired
             }
+            val matchesCategory = effectiveSelectedCategoryId == null || it.item.categoryId == effectiveSelectedCategoryId
+            matchesFilter && matchesCategory
         }
         InventoryHomeState(
             items = visibleModels,
-            allItems = uiModels,
+            allItems = sortedUiModels,
             categories = categories,
             filter = filter,
+            sortOrder = sortOrder,
+            selectedCategoryId = effectiveSelectedCategoryId,
             soonCount = uiModels.count { it.isSoon },
             expiredCount = uiModels.count { it.isExpired },
             isLoading = false
@@ -103,6 +123,23 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
 
     fun setFilter(filter: InventoryFilter) {
         _filter.value = filter
+    }
+
+    fun toggleSortOrder() {
+        _sortOrder.value = when (_sortOrder.value) {
+            InventorySortOrder.Default -> InventorySortOrder.ExpireAtAscending
+            InventorySortOrder.ExpireAtAscending -> InventorySortOrder.ExpireAtDescending
+            InventorySortOrder.ExpireAtDescending -> InventorySortOrder.Default
+        }
+    }
+
+    fun setSelectedCategory(categoryId: String?) {
+        _selectedCategoryId.value = categoryId
+    }
+
+    fun resetFilters() {
+        _filter.value = InventoryFilter.All
+        _selectedCategoryId.value = null
     }
 
     val searchState: StateFlow<InventorySearchState> = combine(
@@ -129,3 +166,18 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
         _searchQuery.value = query
     }
 }
+
+private fun List<InventoryItemUiModel>.sortedForDisplay(sortOrder: InventorySortOrder): List<InventoryItemUiModel> =
+    when (sortOrder) {
+        InventorySortOrder.Default -> this
+        InventorySortOrder.ExpireAtAscending -> sortedWith(
+            compareBy<InventoryItemUiModel> { it.item.expireAt == null }
+                .thenBy { it.item.expireAt ?: Long.MAX_VALUE }
+                .thenByDescending { it.item.updatedAt }
+        )
+        InventorySortOrder.ExpireAtDescending -> sortedWith(
+            compareBy<InventoryItemUiModel> { it.item.expireAt == null }
+                .thenByDescending { it.item.expireAt ?: Long.MIN_VALUE }
+                .thenByDescending { it.item.updatedAt }
+        )
+    }
