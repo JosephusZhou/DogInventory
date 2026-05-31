@@ -7,14 +7,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.doginventory.data.entity.InventoryCategoryEntity
 import com.doginventory.data.entity.InventoryItemEntity
-import com.doginventory.data.entity.InventoryReminderRuleEntity
 import com.doginventory.data.repository.InventoryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.UUID
 
 class InventoryEditorViewModel(
     private val repository: InventoryRepository,
@@ -30,6 +29,12 @@ class InventoryEditorViewModel(
     val categories: StateFlow<List<InventoryCategoryEntity>> = _categories.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            repository.allCategories.collect { categories ->
+                _categories.value = categories
+            }
+        }
+
         if (itemId != null) {
             viewModelScope.launch {
                 val item = repository.watchItemById(itemId).first() ?: return@launch
