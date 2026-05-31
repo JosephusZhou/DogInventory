@@ -222,10 +222,9 @@ fun MainScreen(
                     }
                 )
         ) { backStackEntry ->
-                // For simplicity, editing a category needs to look up the category first.
-                // We use a ViewModel that handles loading the category by id.
+                val categoryId = backStackEntry.arguments?.getString("categoryId")
                 CategoryEditorScreen(
-                    viewModel = viewModel(factory = ViewModelFactory(repository, itemId = null, category = null)),
+                    viewModel = viewModel(factory = ViewModelFactory(repository, categoryId = categoryId)),
                     onNavigateBack = { navController.popBackStack() }
                 )
         }

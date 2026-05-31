@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.doginventory.DogInventoryApp
-import com.doginventory.data.entity.InventoryCategoryEntity
 import com.doginventory.data.repository.InventoryRepository
 import com.doginventory.permission.StoragePermissionCoordinator
 import com.doginventory.ui.inventory.CategoryEditorViewModel
@@ -12,17 +11,17 @@ import com.doginventory.ui.inventory.InventoryCategoriesViewModel
 import com.doginventory.ui.inventory.InventoryDetailViewModel
 import com.doginventory.ui.inventory.InventoryEditorViewModel
 import com.doginventory.ui.inventory.InventoryViewModel
-import com.doginventory.ui.shopping.ShoppingEditorViewModel
-import com.doginventory.ui.shopping.ShoppingViewModel
 import com.doginventory.ui.settings.SettingsBackupViewModel
 import com.doginventory.ui.settings.SettingsWebdavSyncViewModel
+import com.doginventory.ui.shopping.ShoppingEditorViewModel
+import com.doginventory.ui.shopping.ShoppingViewModel
 
 class ViewModelFactory(
     private val repository: InventoryRepository,
     private val applicationContext: Context? = null,
     private val storagePermissionCoordinator: StoragePermissionCoordinator? = null,
     private val itemId: String? = null,
-    private val category: InventoryCategoryEntity? = null
+    private val categoryId: String? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
@@ -52,7 +51,7 @@ class ViewModelFactory(
             }
             modelClass.isAssignableFrom(CategoryEditorViewModel::class.java) -> {
                 @Suppress("UNCHECKED_CAST")
-                CategoryEditorViewModel(repository, category) as T
+                CategoryEditorViewModel(repository, categoryId) as T
             }
             modelClass.isAssignableFrom(SettingsBackupViewModel::class.java) -> {
                 val context = requireNotNull(applicationContext) { "applicationContext is required for SettingsBackupViewModel" }

@@ -79,6 +79,7 @@
     <string name="inventory_category_custom_emoji_placeholder">输入一个 Emoji</string>
     <string name="inventory_category_color">分类颜色</string>
     <string name="inventory_category_preview">图标预览</string>
+    <string name="inventory_category_not_found">分类不存在或已被删除</string>
     <string name="shopping_title">待买</string>
     <string name="shopping_create_title">新增待买</string>
     <string name="shopping_edit_title">编辑待买</string>

@@ -13,33 +13,73 @@ import java.util.UUID
 
 class CategoryEditorViewModel(
     private val repository: InventoryRepository,
-    private val category: InventoryCategoryEntity? = null
+    private val categoryId: String? = null
 ) : ViewModel() {
 
-    val isNew: Boolean = category == null
-    var name by mutableStateOf(category?.name ?: "")
-    var icon by mutableStateOf(category?.icon ?: "📦")
-    var color by mutableStateOf(category?.color ?: InventoryCategoryDefaults.FOOD_COLOR_HEX)
+    private var category: InventoryCategoryEntity? by mutableStateOf(null)
+
+    val isNew: Boolean
+        get() = categoryId == null
+    var isLoading by mutableStateOf(categoryId != null)
+        private set
+    var isMissing by mutableStateOf(false)
+        private set
+    var name by mutableStateOf("")
+    var icon by mutableStateOf("📦")
+    var color by mutableStateOf(InventoryCategoryDefaults.FOOD_COLOR_HEX)
+
+    init {
+        if (categoryId != null) {
+            loadCategory(categoryId)
+        }
+    }
+
+    private fun loadCategory(id: String) {
+        viewModelScope.launch {
+            isLoading = true
+            val loadedCategory = repository.getCategoryById(id)
+            if (loadedCategory == null) {
+                isMissing = true
+            } else {
+                applyCategory(loadedCategory)
+            }
+            isLoading = false
+        }
+    }
+
+    private fun applyCategory(category: InventoryCategoryEntity) {
+        this.category = category
+        name = category.name
+        icon = category.icon
+        color = category.color
+    }
 
     fun save(onSuccess: () -> Unit) {
+        if (isLoading || isMissing || name.isBlank()) return
+
         viewModelScope.launch {
-            val id = category?.id ?: UUID.randomUUID().toString()
+            val categoryToUpdate = category ?: categoryId?.let { repository.getCategoryById(it) }
+            if (!isNew && categoryToUpdate == null) {
+                isMissing = true
+                return@launch
+            }
+
             val now = System.currentTimeMillis()
-            val newCategory = InventoryCategoryEntity(
-                id = id,
+            val savedCategory = InventoryCategoryEntity(
+                id = categoryToUpdate?.id ?: UUID.randomUUID().toString(),
                 name = name,
                 color = color,
                 icon = icon,
-                sortOrder = category?.sortOrder ?: (System.currentTimeMillis() / 1000).toInt(),
-                isPreset = false,
-                isDeleted = false,
-                createdAt = category?.createdAt ?: now,
+                sortOrder = categoryToUpdate?.sortOrder ?: (now / 1000).toInt(),
+                isPreset = categoryToUpdate?.isPreset ?: false,
+                isDeleted = categoryToUpdate?.isDeleted ?: false,
+                createdAt = categoryToUpdate?.createdAt ?: now,
                 updatedAt = now
             )
             if (isNew) {
-                repository.insertCategory(newCategory)
+                repository.insertCategory(savedCategory)
             } else {
-                repository.updateCategory(newCategory)
+                repository.updateCategory(savedCategory)
             }
             onSuccess()
         }
