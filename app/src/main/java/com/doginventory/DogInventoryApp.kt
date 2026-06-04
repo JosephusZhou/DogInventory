@@ -9,6 +9,8 @@ import com.doginventory.data.repository.InventoryRepository
 import com.doginventory.migration.flutter.FlutterBackupMigrator
 import com.doginventory.reminder.InventoryReminderScheduler
 import com.doginventory.settings.PreferencesService
+import com.doginventory.share.ShareApiClient
+import com.doginventory.share.ShareService
 import com.doginventory.webdav.WebDavAutoSyncScheduler
 import com.doginventory.webdav.WebDavSyncService
 
@@ -68,6 +70,14 @@ class DogInventoryApp : Application() {
             database = database,
             repository = repository
         )
+    }
+
+    val shareApiClient: ShareApiClient by lazy {
+        ShareApiClient(baseUrl = BuildConfig.SHARE_BASE_URL)
+    }
+
+    val shareService: ShareService by lazy {
+        ShareService(applicationContext, shareApiClient)
     }
 
     override fun onCreate() {

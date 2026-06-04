@@ -13,3 +13,6 @@ local.properties
 .kotlin/
 app/build
 key.properties
+
+# Cloudflare Worker 部署配置（含真实 database_id 与自定义域名），从 wrangler.toml.example 复制填写
+worker/wrangler.toml

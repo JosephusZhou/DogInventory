@@ -237,4 +237,40 @@
     <string name="preset_category_household">消耗家用品</string>
     <string name="preset_category_coupon">电子券</string>
     <string name="preset_category_other">其他</string>
+
+    <!-- 分享存货 -->
+    <string name="inventory_share_action">分享存货</string>
+    <string name="share_dialog_title">分享存货</string>
+    <string name="share_title_label">分享标题</string>
+    <string name="share_title_placeholder">例如：我的存货</string>
+    <string name="share_include_rules_label">包含提醒规则</string>
+    <string name="share_select_all">全选</string>
+    <string name="share_deselect_all">取消全选</string>
+    <string name="share_selection_count">已选择 %1$d 件 / 共 %2$d 件</string>
+    <string name="share_create_button">创建分享链接</string>
+    <string name="share_in_progress">正在生成分享链接…</string>
+    <string name="share_error_empty">没有可分享的存货</string>
+    <string name="share_error_network">无法连接分享服务器，请检查网络</string>
+    <string name="share_error_http">分享失败（HTTP %1$d）</string>
+    <string name="share_url_label">分享链接</string>
+    <string name="share_copy_button">复制链接</string>
+    <string name="share_system_button">分享到…</string>
+    <string name="share_chooser_title">分享给朋友</string>
+    <string name="share_copy_success">链接已复制</string>
+
+    <!-- 导入共享存货 -->
+    <string name="share_import_dialog_title">导入共享存货</string>
+    <string name="share_import_summary">来自「%1$s」·共 %2$d 件</string>
+    <string name="share_import_select_all">全选</string>
+    <string name="share_import_deselect_all">取消全选</string>
+    <string name="share_import_rules_label">导入提醒规则</string>
+    <string name="share_import_button">导入 %1$d 件</string>
+    <string name="share_import_progress">正在导入…</string>
+    <string name="share_import_success_title">导入完成</string>
+    <string name="share_import_success_message">新增分类 %1$d 个，导入存货 %2$d 件</string>
+    <string name="share_import_error_not_found">分享链接无效或已过期</string>
+    <string name="share_import_error_network">网络异常，请重试</string>
+    <string name="share_import_error_empty">该分享中没有可导入的存货</string>
+    <string name="share_import_retry">重试</string>
+    <string name="share_import_close">关闭</string>
 </resources>

@@ -1,15 +1,19 @@
 package com.doginventory.data.repository
 
-import android.content.Context
 import com.doginventory.data.dao.InventoryDao
 import com.doginventory.data.entity.InventoryCategoryEntity
 import com.doginventory.data.entity.InventoryItemEntity
 import com.doginventory.data.entity.InventoryReminderRuleEntity
 import com.doginventory.data.entity.ShoppingItemEntity
 import com.doginventory.reminder.InventoryReminderScheduler
+import com.doginventory.share.ShareImportResult
+import com.doginventory.share.SharedCategoryDto
+import com.doginventory.share.SharedItemDto
 import com.doginventory.webdav.WebDavAutoSyncTrigger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import org.json.JSONObject
+import java.util.UUID
 
 class InventoryRepository(
     private val inventoryDao: InventoryDao,
@@ -132,6 +136,91 @@ class InventoryRepository(
         } finally {
             trigger?.resumeSync(flushReason = syncReason)
         }
+    }
+
+    suspend fun insertItemsFromShare(
+        sharedItems: List<SharedItemDto>,
+        sharedCategories: List<SharedCategoryDto>,
+        importRules: Boolean
+    ): ShareImportResult = withBatchedAutoSync("share_import") {
+        val localCategories = inventoryDao.watchCategoriesSnapshot()
+        val byName = localCategories.associateBy { it.name.lowercase() }
+        val nameToLocalId = mutableMapOf<String, String>()
+        var newCategoryCount = 0
+        sharedCategories.forEach { sc ->
+            val local = byName[sc.name.lowercase()]
+            if (local != null) {
+                nameToLocalId[sc.name] = local.id
+            } else {
+                val id = UUID.randomUUID().toString()
+                val now = System.currentTimeMillis()
+                inventoryDao.insertCategory(
+                    InventoryCategoryEntity(
+                        id = id,
+                        name = sc.name,
+                        color = sc.color ?: "",
+                        icon = sc.icon ?: "📦",
+                        sortOrder = sc.sortOrder,
+                        isPreset = false,
+                        isDeleted = false,
+                        createdAt = now,
+                        updatedAt = now
+                    )
+                )
+                nameToLocalId[sc.name] = id
+                newCategoryCount++
+            }
+        }
+        val now = System.currentTimeMillis()
+        val rulesByItemId = mutableMapOf<String, MutableList<InventoryReminderRuleEntity>>()
+        val newItems = sharedItems.map { s ->
+            val itemId = UUID.randomUUID().toString()
+            if (importRules) {
+                val bucket = rulesByItemId.getOrPut(itemId) { mutableListOf() }
+                s.rules.forEach { r ->
+                    val payload = JSONObject()
+                    if (r.kind == "expire_offset") {
+                        payload.put("daysBefore", r.daysBefore ?: 7)
+                    } else {
+                        payload.put("remindAt", r.remindAt ?: 0L)
+                    }
+                    bucket += InventoryReminderRuleEntity(
+                        id = UUID.randomUUID().toString(),
+                        itemId = itemId,
+                        kind = r.kind,
+                        enabled = r.enabled,
+                        payloadJson = payload.toString(),
+                        reminderCalendarId = null,
+                        reminderCalendarEventId = null,
+                        lastTriggeredAt = null,
+                        createdAt = now,
+                        updatedAt = now
+                    )
+                }
+            }
+            InventoryItemEntity(
+                id = itemId,
+                name = s.name,
+                categoryId = s.categoryName?.let { nameToLocalId[it] },
+                quantityCurrent = s.quantityCurrent,
+                quantityUnit = s.quantityUnit,
+                quantityLowThreshold = s.quantityLowThreshold,
+                expireAt = s.expireAt,
+                note = s.note,
+                status = "active",
+                createdAt = now,
+                updatedAt = now
+            )
+        }
+        newItems.forEach { item ->
+            inventoryDao.insertItem(item)
+            val itemRules = rulesByItemId[item.id].orEmpty()
+            if (itemRules.isNotEmpty()) {
+                itemRules.forEach { inventoryDao.insertRule(it) }
+            }
+            syncReminders(item, itemRules)
+        }
+        ShareImportResult(importedItemCount = newItems.size, newCategoryCount = newCategoryCount)
     }
 
     private suspend fun syncReminders(

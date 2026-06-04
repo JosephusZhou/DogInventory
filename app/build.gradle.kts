@@ -15,6 +15,14 @@ if (hasReleaseSigning) {
     keyPropertiesFile.inputStream().use { keyProperties.load(it) }
 }
 
+// 从 local.properties 读取分享域名（不提交到版本控制）
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+val shareBaseUrl: String = localProperties.getProperty("shareBaseUrl", "")
+
 android {
     namespace = "com.doginventory"
     compileSdk = 34
@@ -30,6 +38,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        // 从 local.properties 读取分享域名，避免硬编码
+        buildConfigField("String", "SHARE_BASE_URL", "\"https://$shareBaseUrl\"")
+        manifestPlaceholders["shareHost"] = shareBaseUrl
     }
 
     signingConfigs {
@@ -75,6 +86,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {

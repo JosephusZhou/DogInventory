@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.doginventory.DogInventoryApp
 import com.doginventory.data.repository.InventoryRepository
 import com.doginventory.permission.StoragePermissionCoordinator
+import com.doginventory.share.InventoryShareViewModel
+import com.doginventory.share.SharedInventoryImportViewModel
 import com.doginventory.ui.inventory.CategoryEditorViewModel
 import com.doginventory.ui.inventory.InventoryCategoriesViewModel
 import com.doginventory.ui.inventory.InventoryDetailViewModel
@@ -74,6 +76,25 @@ class ViewModelFactory(
                     resources = context.resources,
                     preferencesService = app.preferencesService,
                     webDavSyncService = app.webDavSyncService
+                ) as T
+            }
+            modelClass.isAssignableFrom(InventoryShareViewModel::class.java) -> {
+                val context = requireNotNull(applicationContext) { "applicationContext is required for InventoryShareViewModel" }
+                val app = context.applicationContext as DogInventoryApp
+                @Suppress("UNCHECKED_CAST")
+                InventoryShareViewModel(
+                    shareService = app.shareService,
+                    repository = repository
+                ) as T
+            }
+            modelClass.isAssignableFrom(SharedInventoryImportViewModel::class.java) -> {
+                val context = requireNotNull(applicationContext) { "applicationContext is required for SharedInventoryImportViewModel" }
+                val app = context.applicationContext as DogInventoryApp
+                @Suppress("UNCHECKED_CAST")
+                SharedInventoryImportViewModel(
+                    shareService = app.shareService,
+                    repository = repository,
+                    context = context
                 ) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

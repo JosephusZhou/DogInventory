@@ -27,9 +27,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_PENDING_SHARE_ID = "extra_pending_share_id"
+    }
+
     private var themeMode by mutableStateOf(AppThemeMode.System)
     private var isNotificationPermissionGranted by mutableStateOf(false)
     private var canScheduleExactAlarms by mutableStateOf(false)
+    private var pendingShareId by mutableStateOf<String?>(null)
     private lateinit var permissionCoordinator: AppPermissionCoordinator
     private lateinit var storagePermissionCoordinator: StoragePermissionCoordinator
 
@@ -37,6 +42,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val app = application as DogInventoryApp
+
+        pendingShareId = intent?.getStringExtra(EXTRA_PENDING_SHARE_ID)
 
         val preferences = getSharedPreferences(PreferencesService.THEME_PREFS_NAME, MODE_PRIVATE)
         val systemDarkTheme = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -46,7 +53,7 @@ class MainActivity : ComponentActivity() {
         } else {
             if (preferences.getBoolean(PreferencesService.KEY_DARK_THEME_ENABLED, systemDarkTheme)) AppThemeMode.Dark else AppThemeMode.Light
         }
-        
+
         permissionCoordinator = AppPermissionCoordinator(
             activity = this,
             reminderScheduler = app.reminderScheduler,
@@ -92,7 +99,9 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                             finish()
-                        }
+                        },
+                        pendingShareId = pendingShareId,
+                        onPendingShareIdConsumed = { pendingShareId = null }
                     )
                 }
             }
@@ -127,6 +136,12 @@ class MainActivity : ComponentActivity() {
                 preferencesService.writeLastAutoBackupAt(System.currentTimeMillis())
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val id = intent.getStringExtra(EXTRA_PENDING_SHARE_ID) ?: return
+        pendingShareId = id
     }
 
     override fun onResume() {

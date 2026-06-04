@@ -41,7 +41,7 @@
 高价值入口文件：
 
 - 应用入口：`app/src/main/java/com/doginventory/MainActivity.kt`
-- 启动页：`app/src/main/java/com/doginventory/SplashActivity.kt`
+- 启动页（含深度链接解析）：`app/src/main/java/com/doginventory/SplashActivity.kt`
 - 根导航：`app/src/main/java/com/doginventory/ui/MainScreen.kt`
 - ViewModel 工厂：`app/src/main/java/com/doginventory/ui/ViewModelFactory.kt`
 - 主题颜色：`app/src/main/java/com/doginventory/ui/theme/Color.kt`
@@ -50,6 +50,7 @@
 - 数据库：`app/src/main/java/com/doginventory/data/AppDatabase.kt`
 - DAO：`app/src/main/java/com/doginventory/data/dao/InventoryDao.kt`
 - 仓库层：`app/src/main/java/com/doginventory/data/repository/InventoryRepository.kt`
+- AndroidManifest：`app/src/main/AndroidManifest.xml`
 
 主要功能目录：
 
@@ -61,6 +62,43 @@
 - WebDAV：`app/src/main/java/com/doginventory/webdav/`
 - 权限：`app/src/main/java/com/doginventory/permission/`
 - 设置存储：`app/src/main/java/com/doginventory/settings/`
+- 分享客户端（OkHttp + `org.json`）：`app/src/main/java/com/doginventory/share/`
+
+后端 / 工具链：
+
+- `worker/`：Cloudflare Workers + D1 的分享链接后端，**与 `app/` 平级且不进入 Gradle**。通过 `wrangler.toml.example` + gitignored `wrangler.toml` 管理真实配置。
+- 计划文档：`.claude/plans/`
+
+## 5.1 分享功能的关键文件
+
+Android 端：
+
+- `app/src/main/java/com/doginventory/share/ShareApiClient.kt` — OkHttp 封装，对照 `webdav/WebDavClient.kt` 模式
+- `app/src/main/java/com/doginventory/share/ShareService.kt` — `suspend` + `withContext(Dispatchers.IO)`
+- `app/src/main/java/com/doginventory/share/ShareModels.kt` — DTO + 手写 `org.json` 序列化，对照 `backup/BackupModels.kt` 模式
+- `app/src/main/java/com/doginventory/share/InventoryShareViewModel.kt` + `InventoryShareDialog.kt` — 分享方 UI
+- `app/src/main/java/com/doginventory/share/SharedInventoryImportViewModel.kt` + `SharedInventoryImportDialog.kt` — 接收方 UI
+- `app/src/main/java/com/doginventory/data/repository/InventoryRepository.kt` 的 `insertItemsFromShare(...)` — 导入逻辑，套 `withBatchedAutoSync("share_import")`
+
+深度链接与唤起协议：
+
+- AndroidManifest 的 `SplashActivity` 注册 **两个** intent-filter：
+  - `https` + `host="<实际域名>"` + `pathPrefix="/s/"`（用于直接从浏览器地址栏打开 https 链接）
+  - `doginv` + `host="share.com"` + `pathPrefix="/s/"`（用于落地页 iframe 自动唤起，绕过 Chrome 对 `intent://` 的拦截）
+- 分享 UI 始终按「当前筛选视图」预填，可选「包含所有存货」「包含提醒规则」开关
+
+后端：
+
+- `worker/src/index.ts`、`api.ts`、`shareHtml.ts`、`cleanup.ts`
+- 落地页用 `doginv://share.com/s/{id}` 唤起（**不要改回 `intent://`**，会因 host 不匹配被回退到 Play Store）
+- D1 表：`shared_lists` / `shared_categories` / `shared_items` / `share_rate`
+- `share_id` 必须是 8 字符 Crockford base32（`generateShareId`），不要改回 5 字符版本（`isValidShareId` 会拦截，GET 直接 404）
+
+配置三处必须保持一致（域名一致、scheme 协议对应）：
+
+1. `app/build.gradle.kts` 的 `buildConfigField("String", "SHARE_BASE_URL", ...)`
+2. `app/src/main/AndroidManifest.xml` 的 `<data android:host="...">`
+3. `worker/wrangler.toml`（gitignored）的 `[vars] PUBLIC_BASE_URL`
 
 ## 6. 功能边界规则
 

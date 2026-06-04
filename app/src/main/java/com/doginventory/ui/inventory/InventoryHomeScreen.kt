@@ -19,10 +19,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
-import androidx.compose.material.icons.rounded.ArrowDownward
-import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,16 +41,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.doginventory.R
 import com.doginventory.data.entity.InventoryCategoryEntity
+import com.doginventory.share.InventoryShareDialog
+import com.doginventory.share.InventoryShareViewModel
+import com.doginventory.ui.ViewModelFactory
 import com.doginventory.ui.components.AppTopBar
 import com.doginventory.ui.components.PageBackground
 import com.doginventory.ui.components.cardContainerColor
@@ -66,13 +75,27 @@ import com.doginventory.ui.theme.White
 @Composable
 fun InventoryHomeScreen(
     viewModel: InventoryViewModel,
+    repository: com.doginventory.data.repository.InventoryRepository,
     onNavigateToEditor: (String?) -> Unit,
     onNavigateToCategories: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
-    onNavigateToSearch: () -> Unit = {}
+    onNavigateToSearch: () -> Unit = {},
+    pendingShareId: String? = null,
+    onPendingShareIdConsumed: () -> Unit = {},
+    onNavigateToInventoryTab: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val isDarkTheme = isSystemInDarkTheme()
+    val context = LocalContext.current
+    var showShareDialog by remember { mutableStateOf(false) }
+    var importDialogShareId by remember { mutableStateOf<String?>(null) }
+
+    androidx.compose.runtime.LaunchedEffect(pendingShareId) {
+        val id = pendingShareId ?: return@LaunchedEffect
+        onNavigateToInventoryTab()
+        importDialogShareId = id
+        onPendingShareIdConsumed()
+    }
 
     Scaffold(
         topBar = {
@@ -81,6 +104,9 @@ fun InventoryHomeScreen(
                 actions = {
                     IconButton(onClick = onNavigateToSearch) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(R.string.inventory_search_action))
+                    }
+                    IconButton(onClick = { showShareDialog = true }) {
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.inventory_share_action))
                     }
                     IconButton(onClick = onNavigateToCategories) {
                         Icon(Icons.Rounded.Tune, contentDescription = stringResource(R.string.inventory_manage_categories))
@@ -170,6 +196,36 @@ fun InventoryHomeScreen(
             )
         }
         }
+    }
+
+    if (showShareDialog) {
+        val shareViewModel: InventoryShareViewModel = viewModel(
+            factory = ViewModelFactory(
+                repository = repository,
+                applicationContext = context.applicationContext
+            )
+        )
+        InventoryShareDialog(
+            viewModel = shareViewModel,
+            filteredItems = state.items.map { it.item },
+            allItems = state.allItems.map { it.item },
+            allCategories = state.categories,
+            onDismiss = { showShareDialog = false }
+        )
+    }
+
+    importDialogShareId?.let { shareId ->
+        val importViewModel: com.doginventory.share.SharedInventoryImportViewModel = viewModel(
+            factory = ViewModelFactory(
+                repository = repository,
+                applicationContext = context.applicationContext
+            )
+        )
+        com.doginventory.share.SharedInventoryImportDialog(
+            viewModel = importViewModel,
+            shareId = shareId,
+            onDismiss = { importDialogShareId = null }
+        )
     }
 }
 

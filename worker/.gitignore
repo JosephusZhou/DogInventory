@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Wrangler local dev data and cache
+.wrangler/
+
+# Real Wrangler config (contains database_id, account_id, custom domain);
+# copy from wrangler.toml.example and fill in actual values
+wrangler.toml
+
+# Wrangler local secrets (env vars for `wrangler dev`)
+.dev.vars
+
+# Build output
+dist/

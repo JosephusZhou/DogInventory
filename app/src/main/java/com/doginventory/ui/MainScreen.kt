@@ -96,7 +96,9 @@ fun MainScreen(
     onOpenAppPermissionSettings: () -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onThemeModeChange: (AppThemeMode) -> Unit,
-    onRestartApp: () -> Unit
+    onRestartApp: () -> Unit,
+    pendingShareId: String? = null,
+    onPendingShareIdConsumed: () -> Unit = {}
 ) {
     SystemBarsStyle(
         navigationBarColor = MaterialTheme.colorScheme.background,
@@ -128,7 +130,9 @@ fun MainScreen(
                 onNavigateToCategories = { navController.navigate(Screen.Categories.route) },
                 onNavigateToDetail = { itemId -> navController.navigate(Screen.Detail.createRoute(itemId)) },
                 onNavigateToBackup = { navController.navigate(Screen.SettingsBackup.route) },
-                onNavigateToWebdav = { navController.navigate(Screen.SettingsWebdav.route) }
+                onNavigateToWebdav = { navController.navigate(Screen.SettingsWebdav.route) },
+                pendingShareId = pendingShareId,
+                onPendingShareIdConsumed = onPendingShareIdConsumed
             )
         }
             // Editor (new/edit)
@@ -271,7 +275,9 @@ private fun MainShellScreen(
     onNavigateToCategories: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToBackup: () -> Unit,
-    onNavigateToWebdav: () -> Unit
+    onNavigateToWebdav: () -> Unit,
+    pendingShareId: String? = null,
+    onPendingShareIdConsumed: () -> Unit = {}
 ) {
     val tabNavController = rememberNavController()
     val navBackStackEntry by tabNavController.currentBackStackEntryAsState()
@@ -305,10 +311,22 @@ private fun MainShellScreen(
             composable(Screen.Inventory.route) {
                 InventoryHomeScreen(
                     viewModel = viewModel(factory = ViewModelFactory(repository)),
+                    repository = repository,
                     onNavigateToEditor = onNavigateToEditor,
                     onNavigateToCategories = onNavigateToCategories,
                     onNavigateToDetail = onNavigateToDetail,
-                    onNavigateToSearch = onNavigateToInventorySearch
+                    onNavigateToSearch = onNavigateToInventorySearch,
+                    pendingShareId = pendingShareId,
+                    onPendingShareIdConsumed = onPendingShareIdConsumed,
+                    onNavigateToInventoryTab = {
+                        tabNavController.navigate(Screen.Inventory.route) {
+                            popUpTo(tabNavController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
             composable(Screen.Shopping.route) {

@@ -1,0 +1,21 @@
+name = "dog-inventory-share"
+main = "src/index.ts"
+compatibility_date = "2024-09-01"
+
+# 执行 `npx wrangler d1 create dog_inventory_share` 后，把返回的 database_id 填入下方
+[[d1_databases]]
+binding = "DB"
+database_name = "dog_inventory_share"
+database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+
+# Worker 实际部署后用到的自定义域名（与 Android 端三处保持一致：
+#   app/build.gradle.kts    → buildConfigField SHARE_BASE_URL
+#   app/src/main/AndroidManifest.xml → <data android:host=...>
+#   worker/wrangler.toml    → PUBLIC_BASE_URL
+# ）
+[vars]
+PUBLIC_BASE_URL = "https://REPLACE_WITH_YOUR_DOMAIN"
+
+# 每天 03:00 UTC 清理过期分享与一周前的限流记录
+[triggers]
+crons = ["0 3 * * *"]
