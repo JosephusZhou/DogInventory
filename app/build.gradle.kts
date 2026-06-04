@@ -5,14 +5,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
-}
-
-val keyProperties = Properties()
-val keyPropertiesFile = rootProject.file("key.properties")
-val hasReleaseSigning = keyPropertiesFile.exists()
-
-if (hasReleaseSigning) {
-    keyPropertiesFile.inputStream().use { keyProperties.load(it) }
+    alias(libs.plugins.android.signing)
 }
 
 // 从 local.properties 读取分享域名（不提交到版本控制）
@@ -43,38 +36,13 @@ android {
         manifestPlaceholders["shareHost"] = shareBaseUrl
     }
 
-    signingConfigs {
-        if (hasReleaseSigning) {
-            create("release") {
-                storeFile = file(keyProperties.getProperty("storeFile"))
-                storePassword = keyProperties.getProperty("storePassword")
-                keyAlias = keyProperties.getProperty("keyAlias")
-                keyPassword = keyProperties.getProperty("keyPassword")
-            }
-        }
-    }
-
     buildTypes {
-        debug {
-            signingConfig =
-                if (hasReleaseSigning) {
-                    signingConfigs.getByName("release")
-                } else {
-                    signingConfigs.getByName("debug")
-                }
-        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig =
-                if (hasReleaseSigning) {
-                    signingConfigs.getByName("release")
-                } else {
-                    signingConfigs.getByName("debug")
-                }
         }
     }
     compileOptions {
