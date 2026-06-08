@@ -10,6 +10,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -19,9 +20,10 @@ class BackupArchiveService(
     private val context: Context,
     private val preferencesService: PreferencesService
 ) {
-    fun createBackupArchive(snapshot: BackupSnapshot): File {
+    fun createBackupArchive(snapshot: BackupSnapshot, isAutoBackup: Boolean = false): File {
         val bundle = createBundleDirectory(snapshot)
-        val archiveFile = File(bundle.rootDirectory, buildBackupFileName())
+        val fileName = if (isAutoBackup) buildAutoBackupFileName() else buildBackupFileName()
+        val archiveFile = File(bundle.rootDirectory, fileName)
         ZipOutputStream(FileOutputStream(archiveFile)).use { output ->
             addFileToZip(output, File(bundle.manifestFile), MANIFEST_PATH)
             addFileToZip(output, File(bundle.databaseFile), DATABASE_PATH)
@@ -139,8 +141,13 @@ class BackupArchiveService(
     }
 
     private fun buildBackupFileName(): String {
-        val instant = Instant.now().toString().replace(":", "-")
-        return "dog_inventory_backup_$instant.zip"
+        val timestamp = BACKUP_DATE_FORMATTER.format(Instant.now().atZone(ZoneId.systemDefault()))
+        return "doginventory_backup_$timestamp.zip"
+    }
+
+    private fun buildAutoBackupFileName(): String {
+        val timestamp = BACKUP_DATE_FORMATTER.format(Instant.now().atZone(ZoneId.systemDefault()))
+        return "doginventory_autobackup_$timestamp.zip"
     }
 
     companion object {
@@ -150,5 +157,8 @@ class BackupArchiveService(
         const val PREFERENCES_PATH = "preferences/preferences.json"
         const val DATABASE_FILE_NAME = "database.sqlite"
         val INCLUDED_ENTRIES = listOf(MANIFEST_PATH, DATABASE_PATH, PREFERENCES_PATH)
+        const val AUTO_BACKUP_FILE_PREFIX = "doginventory_autobackup_"
+        private val BACKUP_DATE_FORMATTER: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
     }
 }

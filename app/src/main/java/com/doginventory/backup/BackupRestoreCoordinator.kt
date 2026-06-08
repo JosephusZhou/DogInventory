@@ -78,7 +78,7 @@ class BackupRestoreCoordinator(
 
     suspend fun createAutomaticBackupToPublicDownloads(): BackupExportResult = withContext(Dispatchers.IO) {
         val snapshot = archiveService.createSnapshot()
-        val archiveFile = archiveService.createBackupArchive(snapshot)
+        val archiveFile = archiveService.createBackupArchive(snapshot, isAutoBackup = true)
         try {
             storageBridge.exportBackupToPublicDownloads(archiveFile)
         } finally {
@@ -109,6 +109,6 @@ class BackupRestoreCoordinator(
     }
 
     companion object {
-        const val AUTO_BACKUP_INTERVAL_MILLIS: Long = 3L * 24L * 60L * 60L * 1000L
+        const val AUTO_BACKUP_INTERVAL_MILLIS: Long = 1L * 24L * 60L * 60L * 1000L
     }
 }

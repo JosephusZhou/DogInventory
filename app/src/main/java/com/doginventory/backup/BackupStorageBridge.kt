@@ -92,7 +92,7 @@ class BackupStorageBridge(private val context: Context) {
             MediaStore.Downloads.DATE_ADDED
         )
         val selection = "${MediaStore.Downloads.DISPLAY_NAME} LIKE ?"
-        val selectionArgs = arrayOf("dog_inventory_backup_%")
+        val selectionArgs = arrayOf("${BackupArchiveService.AUTO_BACKUP_FILE_PREFIX}%")
         val sortOrder = "${MediaStore.Downloads.DATE_ADDED} DESC"
 
         resolver.query(
@@ -117,7 +117,7 @@ class BackupStorageBridge(private val context: Context) {
     private fun pruneOldAutoBackupsLegacy(keepCount: Int) {
         val downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val backups = downloadsDirectory.listFiles { file ->
-            file.isFile && file.name.startsWith("dog_inventory_backup_") && file.name.endsWith(".zip")
+            file.isFile && file.name.startsWith(BackupArchiveService.AUTO_BACKUP_FILE_PREFIX) && file.name.endsWith(".zip")
         }?.sortedByDescending { it.lastModified() }.orEmpty()
 
         backups.drop(keepCount).forEach { it.delete() }
