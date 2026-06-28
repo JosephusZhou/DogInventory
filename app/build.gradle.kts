@@ -85,6 +85,7 @@ dependencies {
 
     implementation(libs.okhttp)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

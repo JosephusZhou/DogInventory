@@ -12,6 +12,8 @@ import com.doginventory.share.SharedItemDto
 import com.doginventory.webdav.WebDavAutoSyncTrigger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 import java.util.UUID
 
@@ -20,6 +22,9 @@ class InventoryRepository(
     private val reminderScheduler: InventoryReminderScheduler? = null
 ) {
     var webDavAutoSyncTrigger: WebDavAutoSyncTrigger? = null
+
+    // 串行化全量重调度：boot 接收者、App 启动、兜底 Worker 可能并发调用 resyncAllReminders()。
+    private val reminderSyncMutex = Mutex()
 
     val allCategories: Flow<List<InventoryCategoryEntity>> = inventoryDao.watchCategories()
     val activeItems: Flow<List<InventoryItemEntity>> = inventoryDao.watchActiveItems()
@@ -57,13 +62,21 @@ class InventoryRepository(
         webDavAutoSyncTrigger?.requestSync("inventory_item_deleted")
     }
 
-    suspend fun resyncAllReminders() {
+    suspend fun resyncAllReminders() = reminderSyncMutex.withLock {
         val categories = allCategories.first().associateBy { it.id }
         val items = activeItems.first().associateBy { it.id }
         val groupedRules = inventoryDao.getAllRules().groupBy { it.itemId }
         items.values.forEach { item ->
             syncReminders(item, groupedRules[item.id].orEmpty(), categories[item.categoryId])
         }
+    }
+
+    suspend fun getActiveItemsSnapshot(): List<InventoryItemEntity> = activeItems.first()
+
+    suspend fun getAllRulesSnapshot(): List<InventoryReminderRuleEntity> = inventoryDao.getAllRules()
+
+    suspend fun updateRuleTriggeredAt(ruleId: String, ts: Long) {
+        inventoryDao.updateRuleTriggeredAt(ruleId, ts)
     }
 
     suspend fun cancelAllReminders() {

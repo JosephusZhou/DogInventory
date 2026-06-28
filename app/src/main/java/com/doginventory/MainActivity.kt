@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
     private var themeMode by mutableStateOf(AppThemeMode.System)
     private var isNotificationPermissionGranted by mutableStateOf(false)
     private var canScheduleExactAlarms by mutableStateOf(false)
+    private var isIgnoringBatteryOptimizations by mutableStateOf(false)
     private var pendingShareId by mutableStateOf<String?>(null)
     private lateinit var permissionCoordinator: AppPermissionCoordinator
     private lateinit var storagePermissionCoordinator: StoragePermissionCoordinator
@@ -85,9 +86,11 @@ class MainActivity : ComponentActivity() {
                         themeMode = themeMode,
                         isNotificationPermissionGranted = isNotificationPermissionGranted,
                         canScheduleExactAlarms = canScheduleExactAlarms,
+                        isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations,
                         onRequestNotificationPermission = { permissionCoordinator.requestNotificationPermission() },
                         onOpenAppPermissionSettings = permissionCoordinator::openAppPermissionSettings,
                         onOpenExactAlarmSettings = permissionCoordinator::openExactAlarmSettings,
+                        onOpenBatteryOptimizationSettings = permissionCoordinator::requestIgnoreBatteryOptimizations,
                         onThemeModeChange = { mode ->
                             themeMode = mode
                             preferencesService.writeThemeMode(mode.preferenceValue)
@@ -156,6 +159,7 @@ class MainActivity : ComponentActivity() {
     private fun refreshPermissionStates() {
         isNotificationPermissionGranted = permissionCoordinator.isNotificationPermissionGranted()
         canScheduleExactAlarms = permissionCoordinator.canScheduleExactAlarms()
+        isIgnoringBatteryOptimizations = permissionCoordinator.isIgnoringBatteryOptimizations()
     }
 
 }

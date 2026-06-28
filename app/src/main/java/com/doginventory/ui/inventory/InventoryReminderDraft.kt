@@ -50,8 +50,16 @@ data class InventoryReminderDraft(
     }
 
     fun scheduledAtForItem(item: InventoryItemEntity, now: Long = System.currentTimeMillis()): Long? {
+        return rawScheduledAtForItem(item)?.takeIf { it > now }
+    }
+
+    /**
+     * 计算规则的原始触发时间，不做「必须在未来」过滤。
+     * 用于兜底补发 Worker 判定是否漏报；正常调度请用 [scheduledAtForItem]。
+     */
+    fun rawScheduledAtForItem(item: InventoryItemEntity): Long? {
         if (!enabled) return null
-        val scheduled = when (kind) {
+        return when (kind) {
             "expire_offset" -> {
                 val expireAt = item.expireAt ?: return null
                 val days = daysBefore ?: return null
@@ -69,7 +77,6 @@ data class InventoryReminderDraft(
             "expire_at" -> remindAt
             else -> null
         }
-        return scheduled?.takeIf { it > now }
     }
 
     companion object {

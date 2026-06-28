@@ -43,9 +43,11 @@ fun SettingsScreen(
     themeMode: AppThemeMode,
     isNotificationPermissionGranted: Boolean,
     canScheduleExactAlarms: Boolean,
+    isIgnoringBatteryOptimizations: Boolean,
     onRequestNotificationPermission: () -> Unit,
     onOpenAppPermissionSettings: () -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
+    onOpenBatteryOptimizationSettings: () -> Unit,
     onThemeModeChange: (AppThemeMode) -> Unit,
     onNavigateToCategories: () -> Unit,
     onNavigateToBackup: () -> Unit,
@@ -130,6 +132,30 @@ fun SettingsScreen(
                                 DogInventoryTheme.semanticColors.warning
                             },
                             onClick = onOpenExactAlarmSettings
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                        )
+                        SettingsItem(
+                            icon = "🔋",
+                            title = stringResource(R.string.settings_battery_optimization_title),
+                            subtitle = if (isIgnoringBatteryOptimizations) {
+                                stringResource(R.string.settings_battery_optimization_granted)
+                            } else {
+                                stringResource(R.string.settings_battery_optimization_not_granted)
+                            },
+                            trailingText = if (isIgnoringBatteryOptimizations) {
+                                stringResource(R.string.settings_enabled)
+                            } else {
+                                stringResource(R.string.settings_go_enable)
+                            },
+                            trailingColor = if (isIgnoringBatteryOptimizations) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                DogInventoryTheme.semanticColors.warning
+                            },
+                            onClick = onOpenBatteryOptimizationSettings
                         )
                     }
                 }

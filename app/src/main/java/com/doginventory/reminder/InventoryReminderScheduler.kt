@@ -7,7 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import androidx.core.net.toUri
-import com.doginventory.R
+import com.doginventory.SplashActivity
 import com.doginventory.data.entity.InventoryCategoryEntity
 import com.doginventory.data.entity.InventoryItemEntity
 import com.doginventory.data.entity.InventoryReminderRuleEntity
@@ -46,44 +46,42 @@ class InventoryReminderScheduler(private val context: Context) {
             val remindAt = draft.scheduledAtForItem(item, now) ?: return@forEach
             schedule(
                 ruleId = rule.id,
-                itemName = item.name,
-                body = inventoryReminderBody(draft.kind, item.name, category?.name),
+                body = InventoryReminderNotifier.body(context, draft.kind, item.name, category?.name),
                 triggerAtMillis = remindAt
             )
         }
     }
 
     fun cancel(ruleId: String) {
-        pendingIntent(ruleId, "", "", PendingIntent.FLAG_NO_CREATE)?.let(alarmManager::cancel)
+        pendingIntent(ruleId, "", PendingIntent.FLAG_NO_CREATE)?.let(alarmManager::cancel)
     }
 
-    private fun schedule(ruleId: String, itemName: String, body: String, triggerAtMillis: Long) {
-        val pendingIntent = pendingIntent(ruleId, itemName, body, PendingIntent.FLAG_UPDATE_CURRENT) ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+    private fun schedule(ruleId: String, body: String, triggerAtMillis: Long) {
+        val pendingIntent = pendingIntent(ruleId, body, PendingIntent.FLAG_UPDATE_CURRENT) ?: return
+        // setAlarmClock 完全豁免 Doze，是面向用户的精确提醒里最强的投递保证；
+        // 代价是状态栏出现闹钟图标并计入系统「下一个闹钟」。
+        val info = AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent())
+        alarmManager.setAlarmClock(info, pendingIntent)
+    }
+
+    private fun showIntent(): PendingIntent {
+        val launch = Intent(context, SplashActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
+        return PendingIntent.getActivity(
+            context,
+            SHOW_INTENT_REQUEST_CODE,
+            launch,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
-    private fun inventoryReminderBody(kind: String, itemName: String, categoryName: String?): String {
-        val prefix = when (kind) {
-            "expire_offset" -> context.getString(R.string.notification_inventory_reminder_expire_offset)
-            "expire_at" -> context.getString(R.string.notification_inventory_reminder_expire_at)
-            else -> context.getString(R.string.notification_inventory_reminder_default)
-        }
-        val categoryText = categoryName?.takeIf { it.isNotBlank() }
-            ?.let { context.getString(R.string.notification_inventory_reminder_category_format, it) }
-            .orEmpty()
-        return context.getString(R.string.notification_inventory_reminder_body, prefix, itemName, categoryText)
-    }
-
-    private fun pendingIntent(ruleId: String, itemName: String, body: String, flags: Int): PendingIntent? {
+    private fun pendingIntent(ruleId: String, body: String, flags: Int): PendingIntent? {
         val requestCode = notificationIdForRule(ruleId)
         val intent = Intent(context, InventoryReminderReceiver::class.java).apply {
             putExtra(InventoryReminderReceiver.EXTRA_NOTIFICATION_ID, requestCode)
-            putExtra(InventoryReminderReceiver.EXTRA_ITEM_NAME, itemName)
             putExtra(InventoryReminderReceiver.EXTRA_BODY, body)
+            putExtra(InventoryReminderReceiver.EXTRA_RULE_ID, ruleId)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -94,6 +92,7 @@ class InventoryReminderScheduler(private val context: Context) {
     }
 
     companion object {
+        private const val SHOW_INTENT_REQUEST_CODE = 1
         fun notificationIdForRule(ruleId: String): Int = abs("inventory:$ruleId".hashCode()).coerceAtLeast(1)
     }
 }

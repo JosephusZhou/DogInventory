@@ -1,6 +1,12 @@
 package com.doginventory.data.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Update
 import com.doginventory.data.entity.InventoryCategoryEntity
 import com.doginventory.data.entity.InventoryItemEntity
 import com.doginventory.data.entity.InventoryReminderRuleEntity
@@ -90,6 +96,9 @@ interface InventoryDao {
 
     @Query("DELETE FROM inventory_reminder_rules WHERE itemId = :itemId")
     suspend fun deleteRulesByItemId(itemId: String)
+
+    @Query("UPDATE inventory_reminder_rules SET lastTriggeredAt = :ts WHERE id = :id")
+    suspend fun updateRuleTriggeredAt(id: String, ts: Long)
     
     @Transaction
     suspend fun deleteItemWithRules(itemId: String) {

@@ -1,6 +1,9 @@
 package com.doginventory
 
 import android.app.Application
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.doginventory.backup.BackupArchiveService
 import com.doginventory.backup.BackupRestoreCoordinator
 import com.doginventory.backup.BackupStorageBridge
@@ -8,11 +11,17 @@ import com.doginventory.data.AppDatabase
 import com.doginventory.data.repository.InventoryRepository
 import com.doginventory.migration.flutter.FlutterBackupMigrator
 import com.doginventory.reminder.InventoryReminderScheduler
+import com.doginventory.reminder.ReminderBackstopWorker
 import com.doginventory.settings.PreferencesService
 import com.doginventory.share.ShareApiClient
 import com.doginventory.share.ShareService
 import com.doginventory.webdav.WebDavAutoSyncScheduler
 import com.doginventory.webdav.WebDavSyncService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class DogInventoryApp : Application() {
     val database: AppDatabase by lazy { AppDatabase.getDatabase(this) }
@@ -80,8 +89,22 @@ class DogInventoryApp : Application() {
         ShareService(applicationContext, shareApiClient)
     }
 
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate() {
         super.onCreate()
         preferencesService.webDavAutoSyncTrigger = webDavAutoSyncScheduler
+        // 进程冷启动即全量重调度：覆盖进程被杀重启、被 OEM 强杀后用户重开 App 的恢复场景。
+        appScope.launch { repository.resyncAllReminders() }
+        scheduleReminderBackstop()
+    }
+
+    private fun scheduleReminderBackstop() {
+        val request = PeriodicWorkRequestBuilder<ReminderBackstopWorker>(6, TimeUnit.HOURS).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            ReminderBackstopWorker.UNIQUE_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
     }
 }
